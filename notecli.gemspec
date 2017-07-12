@@ -9,9 +9,9 @@ Gem::Specification.new do |spec|
   spec.authors       = ["zpallin"]
   spec.email         = ["zpallin@gmail.com"]
 
-  spec.summary       = %q{TODO: Write a short summary, because Rubygems requires one.}
-  spec.description   = %q{TODO: Write a longer description or delete this line.}
-  spec.homepage      = "TODO: Put your gem's website or public repo URL here."
+  spec.summary       = %q{Note taking for bash users!}
+  spec.description   = %q{Note taking on the cli, helps keep notes organized!}
+  spec.homepage      = "https://github.com/zpallin/notecli."
   spec.license       = "MIT"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
@@ -28,6 +28,8 @@ Gem::Specification.new do |spec|
   end
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+#  spec.executables   = ["note"]
+  p spec.executables
   spec.require_paths = ["lib"]
 
   spec.add_development_dependency "bundler", "~> 1.15"
