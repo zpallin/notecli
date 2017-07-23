@@ -1,8 +1,14 @@
 # Notecli
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/notecli`. To experiment with that code, run `bin/console` for an interactive prompt.
+Notecli is a command line application that allows you to write, organize, and manage your notes while you develop on the command line.
 
-TODO: Delete this and the text above, and describe your gem
+## Why you might use Notecli instead of a typical gui notetaking app
+
+- You are already taking notes on the command line rather than in a typical gui app
+- You are proficient in bash shell and enjoy using it
+- You work exclusively in a terminal and cannot use a gui tool
+- You would rather search for file content with a regular expression
+- You want to write your notes in a plaintext format like `markdown`
 
 ## Installation
 
@@ -22,7 +28,7 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+
 
 ## Development
 
