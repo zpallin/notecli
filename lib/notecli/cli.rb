@@ -1,43 +1,60 @@
 
 require 'thor'
 require 'notecli/config'
+require "highline/import"
 
 module Notecli
+  class Group < Thor
+    desc "new NAME", "creates a new group with name"
+    def new(name)
+      say "Adding group \"#{name}\""
+    end
 
-  class Show < Thor
-    desc "show groups (<groups> ...)", "shows all groupings or optionally specific groups"
-    def groups(*args)
-      say "Show groups #{args}"
+    desc "files [FILE ...]", "adds file list to group"
+    def files(*args)
+      group = ask "Group name: "
+      say "Add these files: (#{args}) to group \"#{group}\""
+    end
+
+    desc "describe REGEX", "describes group with name"
+    def describe(name)
+      say "Describe group with name \"#{name}\""
+    end
+
+    desc "list", "lists all groups"
+    def list
+      say "List all groups!"
     end
   end
 
   class CLI < Thor
-    desc "open <filename>", "opens a file"
+    desc "open REGEX", "opens a file (matches regex)"
     def open(*args)
       say "open the following files in order: (#{args})"
     end 
     map "o" => :open
 
-    desc "find <regex match>", "finds files with matching names"
+    desc "find REGEX", "finds files with matching names"
     def find(*args)
       say "Find files matching this name: /#{args}/"
     end
     map "f" => :find
 
-    desc "grep <regex match>", "finds files with matching data"
-    def grep(*args)
-      say "Grep for this string: /#{args}/"
+    desc "match REGEX", "finds files with matching data"
+    def match(*args)
+      say "Match for this string: /#{args}/"
     end
-    map "g" => :grep
+    map "m" => :match
 
-    desc "group <file1> ...", "groups target files together"
-    def group(*args)
-      say "Group these files: #{args}"
-    end 
+    desc "config [KEY=VALUE ...]", "set config keys on the command line (nesting works)"
+    def config(*args)
+      say "set the following configs: #{args}"
+    end
+    map "c" => :config
 
-    desc "show <subcommand> ...<args>", "show details about note's internal management"
-    subcommand :show, Show
-    map "s" => :show
+    desc "group SUBCOMMAND ...ARGS", "groups target files together"
+    subcommand :group, Group
+    map "g" => :group
   end
 end
 
