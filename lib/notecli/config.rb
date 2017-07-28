@@ -1,6 +1,7 @@
 
-require 'deep_merge'
-require 'yaml'
+require "fileutils"
+require "deep_merge"
+require "yaml"
 
 module Note
 
@@ -16,16 +17,25 @@ module Note
 
     def initialize(name, home)
       @name = name
-      @home = home
+      @home = File.expand_path(home)
+      @path = File.join(@home, "groups", @name)
+      self.create
     end
 
+    # returns the created dir -- also automatically inserts groups
     def create
-      return false
+      FileUtils.mkdir_p @path
     end
 
-    def add(files)
-      puts "Add #{files}"
-      return false
+    def add(pages)
+      errors = []
+      pages.each do |page|
+        out = page.symlink(page.path)
+        if out != 0
+          errors << out
+        end
+      end
+      return errors
     end
 
     def members
@@ -44,10 +54,20 @@ module Note
   # this class operates to interaction with the file structure, does not store
   # any state data.
   class Page
-    attr_reader :name
+    attr_reader :name, :path
+  
+    def initialize(path)
+      @path = File.expand_path path
+      @name = path.split("/").last
+      self.create
+    end
 
-    def initialize(name)
-      @name = name
+    def symlink(path)
+      FileUtils.symlink path, @path
+    end
+
+    def create
+      FileUtils.touch(@path)
     end
 
     def open
@@ -77,8 +97,9 @@ module Note
   # Only changes for local users.
   class Config
     def initialize
+      user_home = File.expand_path("~")
       @config = self.default_config
-      @config_files = ['~/.notecli.yml']
+      @config_files = ["#{user_home}/.notecli/config.yml"]
       self.load
       self.process
     end
@@ -86,7 +107,7 @@ module Note
     def default_config
       {
         "last_updated" => DateTime.now.strftime("%d/%m/%Y %H:%M"),
-        "storage_path" => "/var/notecli",
+        "storage_path" => File.expand_path("~/.notecli"),
       }
     end
 
@@ -94,7 +115,10 @@ module Note
     # etc. Examples include /etc/noterc and ~/.noterc
     def load
       @config_files.each do |c|
-        @config.deep_merge!(YAML.load_file(File.expand_path(c)))
+        config = File.expand_path(c)
+        if File.exists? config
+          @config.deep_merge!(YAML.load_file(config))
+        end
       end
       @config
     end
