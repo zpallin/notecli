@@ -4,7 +4,6 @@ require "deep_merge"
 require "yaml"
 
 module Note
-
   ##############################################################################  
   # a group is a data struture that references a directory of symlinked files. 
   # all files are originally stored in the same directory and symlinked so that
@@ -13,37 +12,45 @@ module Note
   # this class operates to interaction with the file structure, does not store
   # any state data.
   class Group
-    attr_reader :name
+    attr_reader :name, :path
 
-    def initialize(name, home)
-      @name = name
-      @home = File.expand_path(home)
-      @path = File.join(@home, "groups", @name)
-      self.create
+    def initialize(name, config: Config.new)
+			@config = config.settings
+      self.create name
     end
 
-    # returns the created dir -- also automatically inserts groups
-    def create
+    def self.path_to(groupname="", config: Config.new)
+      File.expand_path File.join(config.settings["groups_path"], groupname)
+    end
+
+    def self.assert
+      FileUtils.mkdir_p Group::path_to
+    end
+
+    # returns the dir -- automatically creates it if not done
+    def create(name)
+      Group::assert
+      @name = name
+      @path = Group::path_to name
       FileUtils.mkdir_p @path
     end
 
     def add(pages)
-      errors = []
-      pages.each do |page|
-        out = page.symlink(page.path)
-        if out != 0
-          errors << out
-        end
+      [pages].flatten.each do |page|
+        return false if not page.symlink File.join(@path, page.name)
       end
-      return errors
+      return true
     end
 
     def members
-      puts "Listing members"
+      entries = Dir.entries(@path).select { |f| File.file?(Page::path_to f) }
+      return entries.map{|name| Page.new name}
     end
 
-    def rename
-      puts "Rename this group"
+    def rename(name)
+      FileUtils.mv @path, Group::path_to(name)
+      self.create name
+      return true
     end
   end
 
@@ -55,39 +62,100 @@ module Note
   # any state data.
   class Page
     attr_reader :name, :path
-  
-    def initialize(path)
-      @path = File.expand_path path
-      @name = path.split("/").last
-      self.create
+    
+    def initialize(name, config: Config.new)
+			@config = config.settings
+      self.create name
     end
 
-    def symlink(path)
-      FileUtils.symlink path, @path
+    def self.path_to(pagename="", config: Config.new)
+      File.expand_path File.join(config.settings["pages_path"], pagename)
     end
 
-    def create
+    def self.assert
+      FileUtils.mkdir_p Page::path_to
+    end
+
+    def symlink(to_path)
+      FileUtils.ln_s(@path, to_path)
+    end
+
+    def create(name)
+      Page::assert
+      @name = name
+      @path = Page::path_to name
+      FileUtils.mkdir_p File.dirname(@path)
       FileUtils.touch(@path)
     end
 
-    def open
-
+    # opens a file with the editor and file type provided
+    # a file is symlinked to a tmp directory and opened with a different file extension
+    def open(editor: @config["editor"], ext: @config["ext"])
+      Page::assert
+      temp = self.temp ext
+      system(editor, temp)
+      self.rm_temp ext
     end
 
-    def rename
+    # creates a symlink in a temp directory
+    def temp(ext, parent: @config["temp_path"])
+      to_path = File.join(parent, @name + "." + ext)
+      FileUtils.mkdir_p parent
+      self.symlink to_path
+      to_path
+    end
 
+    def rm_temp(file_ext, parent: @config["temp_path"])
+      FileUtils.rm File.join(parent, @name + ".#{file_ext}")
+    end
+
+    def rename(name)
+      FileUtils.mv @path, Page::path_to(name)
+      self.create name
+      return true
     end
 
     def delete
-
+      FileUtils.rm @path
     end
 
-    # echos the file contents to stdout so that you may redirect it to a new
-    # file somewhere on your desktop rather than within note's file structure
+    # appends the file content with a string
+    def append(string)
+      File.open(@path, "a") do |file|
+        file.write string
+      end
+    end
+
+    def prepend(string)
+			File.open(@path, "r") do |orig|
+					File.unlink(@path)
+					File.open(@path, "w") do |new|
+							new.write string
+							new.write orig.read()
+					end
+			end
+    end
+
+    # returns file contents as string
     def read
-      
+      file = File.open(@path)
+      file.read
     end
+  end
 
+  ##############################################################################
+  # contains methods that analyze note layout
+  class Info
+    def self.list_groups(groups=[], config: Config.new)
+      Group::assert
+
+      all_groups = Dir.entries(Group::path_to).reject{|g|  g =~ /^\.\.?$/}
+      if groups.length == 0
+        all_groups
+      else
+        all_groups.select{|g| groups.include? File.basename(g)}
+      end
+    end
   end
 
   ############################################################################## 
@@ -96,46 +164,37 @@ module Note
   # ~/.notecli.yml, for now, meaning that there are no global changes yet.
   # Only changes for local users.
   class Config
+		attr_reader :settings
+
     def initialize
       user_home = File.expand_path("~")
-      @config = self.default_config
-      @config_files = ["#{user_home}/.notecli/config.yml"]
+      @settings = Config::default
+      @files = ["#{user_home}/.notecli/config.yml"]
       self.load
-      self.process
     end
 
-    def default_config
+    def self.default
       {
         "last_updated" => DateTime.now.strftime("%d/%m/%Y %H:%M"),
-        "storage_path" => File.expand_path("~/.notecli"),
+        "store_path" => File.expand_path("~/.notecli"),
+				"groups_path" => File.expand_path("~/.notecli/groups"),
+				"pages_path" => File.expand_path("~/.notecli/pages"),
+				"temp_path" => File.expand_path("~/.notecli/temp"),
+				"editor" => "vi",
+				"ext" => "txt"
       }
     end
 
     # loads configuration file which should be in the local profile or
     # etc. Examples include /etc/noterc and ~/.noterc
     def load
-      @config_files.each do |c|
+      @files.each do |c|
         config = File.expand_path(c)
         if File.exists? config
-          @config.deep_merge!(YAML.load_file(config))
+          @settings.deep_merge!(YAML.load_file(config))
         end
       end
-      @config
+      @settings
     end
-
-    # after loading the config, we can run this to make any changes to
-    # our environment via the config
-    def process
-      #p @config
-    end
-  end
-
-
-  ##############################################################################
-  # manages an instance of note and combines config with objects 
-  class Instance
-    def initialize(config)
-
-    end
-  end
+	end
 end

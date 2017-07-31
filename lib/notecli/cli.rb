@@ -4,30 +4,49 @@ require 'notecli/config'
 require "highline/import"
 
 module Notecli
-  class Group < Thor
-    desc "new NAME", "creates a new group with name"
-    def new(name)
-      say "Adding group \"#{name}\""
-    end
 
-    desc "files [FILE ...]", "adds file list to group"
-    def files(*args)
-      group = ask "Group name: "
-      say "Add these files: (#{args}) to group \"#{group}\""
-    end
+	# used to link pages and groups together
+	class Link < Thor
 
-    desc "describe REGEX", "describes group with name"
-    def describe(name)
-      say "Describe group with name \"#{name}\""
-    end
+		desc "groups MATCH [MATCH...] --to-page PAGE", "links groups to a page"
+		option :"to-page", :type => :string
+		def groups(*args)
+			page = options[:"to-page"]
+			if page
+				puts "linking #{page} to #{args}"
+				page = Note::Page.new page
+				args.each do |name|
+					group = Note::Group.new name
+					group.add page
+				end
+			else
+				say "Must use flag \"--to-page\""
+			end
+		end
 
-    desc "list", "lists all groups"
-    def list
-      say "List all groups!"
-    end
-  end
+		desc "pages MATCH [MATCH...] --to-group GROUP", "links pages to a group"
+		option :"to-group", :type => :string
+		def pages(*args)
+			group = options[:"to-group"]
+			if group
+				puts "linking #{group} to #{args}"
+				
+			else
+				say "Must use flag \"--to-group\""
+			end
+		end
+	end
 
   class CLI < Thor
+		desc "groups REGEX", "lists all groups, or what groups match"
+		def groups(match=nil)
+			if match
+				say "list all groupings with match \"#{match}\""
+			else
+				say "list all groupings"
+			end
+		end
+
     desc "open REGEX", "opens a file (matches regex)"
     def open(*args)
       say "open the following files in order: (#{args})"
@@ -52,9 +71,9 @@ module Notecli
     end
     map "c" => :config
 
-    desc "group SUBCOMMAND ...ARGS", "groups target files together"
-    subcommand :group, Group
-    map "g" => :group
+		desc "link SUBCOMMAND [OPTIONS]", "used to link groups and pages"
+		subcommand :link, Link
+		map "l" => :link
   end
 end
 
