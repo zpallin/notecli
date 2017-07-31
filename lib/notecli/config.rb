@@ -76,6 +76,10 @@ module Note
       FileUtils.mkdir_p Page::path_to
     end
 
+    def self.find(match)
+      
+    end
+
     def symlink(to_path)
       FileUtils.ln_s(@path, to_path)
     end

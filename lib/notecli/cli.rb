@@ -7,16 +7,16 @@ module Notecli
 
 	# used to link pages and groups together
 	class Link < Thor
-
 		desc "groups MATCH [MATCH...] --to-page PAGE", "links groups to a page"
 		option :"to-page", :type => :string
 		def groups(*args)
-			page = options[:"to-page"]
-			if page
-				puts "linking #{page} to #{args}"
-				page = Note::Page.new page
-				args.each do |name|
-					group = Note::Group.new name
+			pageName = options[:"to-page"]
+			if pageName
+				puts "linking #{page} to:"
+				page = Note::Page.new pageName
+				args.each do |groupName|
+          puts " - #{groupName}"
+					group = Note::Group.new groupName
 					group.add page
 				end
 			else
@@ -27,10 +27,15 @@ module Notecli
 		desc "pages MATCH [MATCH...] --to-group GROUP", "links pages to a group"
 		option :"to-group", :type => :string
 		def pages(*args)
-			group = options[:"to-group"]
-			if group
-				puts "linking #{group} to #{args}"
-				
+			groupName = options[:"to-group"]
+			if groupName
+				puts "linking #{group} to:"
+        group = Note::Group.new groupName
+		    args.each do |pageName|
+          puts " - #{pageName}"
+          page = Note::Page.new pageName
+          group.add page
+        end    
 			else
 				say "Must use flag \"--to-group\""
 			end
@@ -75,5 +80,7 @@ module Notecli
 		subcommand :link, Link
 		map "l" => :link
   end
+
+  
 end
 
