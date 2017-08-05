@@ -79,12 +79,12 @@ module Note
     end
 
     # returns page objects for each regex matching page name
-    def self.find(match="*")
+    def self.find(match="*", exists=false)
       Page::find_path(match).map{|f| Page.new File.basename(f)}
     end
 
     # returns full paths for each regex matching page name
-    def self.find_path(match="*")
+    def self.find_path(match="*", exists=false)
       Dir[(Page::path_to match)]
     end
 
@@ -184,7 +184,7 @@ module Note
   # ~/.notecli.yml, for now, meaning that there are no global changes yet.
   # Only changes for local users.
   class Config
-		attr_reader :settings
+		attr_accessor :settings
 
     def initialize
       user_home = File.expand_path("~")
