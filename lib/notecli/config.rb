@@ -78,12 +78,12 @@ module Note
       FileUtils.mkdir_p Page::path_to
     end
 
-    # returns page objects for each regex matching page name
+    # returns page objects for each matching page name
     def self.find(match="*")
       Page::find_path(match).map{|f| Page.new File.basename(f)}
     end
 
-    # returns full paths for each regex matching page name
+    # returns full paths for each matching page name
     def self.find_path(match="*")
       Dir[(Page::path_to match)]
     end
@@ -91,6 +91,7 @@ module Note
     # creates a symlink to another path for the original path of
     # this page
     def symlink(to_path)
+      FileUtils.rm to_path if File.exist? to_path 
       FileUtils.ln_s(@path, to_path)
     end
 
@@ -104,12 +105,24 @@ module Note
     end
 
     # opens a file with the editor and file type provided
-    # a file is symlinked to a tmp directory and opened with a different file extension
+    # a file is symlinked to a tmp directory and opened with 
+    # a different file extension
     def open(editor: @config["editor"], ext: @config["ext"])
       Page::assert
       temp = self.temp ext
       system(editor, temp)
       self.rm_temp ext
+    end
+
+    def self.open_multiple(pages, 
+                           editor: @config["editor"], 
+                           ext: @config["ext"])
+      Page::assert
+      temps = pages.map{|page| page.temp ext}
+      conns = "#{editor} #{temps.join(' ')}"
+      system(conns)
+      #system(editor, temps.join(' '))
+      pages.map{|page| page.rm_temp ext}
     end
 
     # creates a symlink in a temp directory

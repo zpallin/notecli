@@ -54,10 +54,19 @@ module Notecli
 			end
 		end
 
+    # opens one or more files inside notecli
     desc "open REGEX", "opens a file (matches regex)"
-    option :'match', :type => :boolean, :default => false
-    option :editor, :type => :string, :default => config.settings["editor"]
-    option :ext, :type => :string, :default => config.settings["ext"]
+    option :'match', 
+           :type => :boolean, 
+           :default => false
+    option :editor, 
+           :type => :string, 
+           :default => config.settings["editor"],
+           :aliases => [:'-e']
+    option :ext, 
+           :type => :string, 
+           :default => config.settings["ext"],
+           :aliases => [:'-x']
     def open(*args)
       list = []
       if options[:match]
@@ -68,15 +77,28 @@ module Notecli
         list = args.map{|f| Note::Page.new f}.uniq
       end
 
-      list.each do |page|
-        page.open editor: options[:editor], ext: options[:ext]
+      if list.length == 1
+        list.first.open editor: options[:editor], ext: options[:ext]
+      else
+        Note::Page::open_multiple(list, 
+                                  editor: options[:editor],
+                                  ext: options[:ext])
       end
     end
     map "o" => :open
 
-    desc "find REGEX", "finds files with matching names"
-    def find(*args)
-      say "Find files matching this name: /#{args}/"
+    desc "find \"MATCH\"", "finds files with matching names"
+    option :full_path, 
+           :default => false,
+           :type => :boolean,
+           :aliases => [:'-p']
+    def find(match="*")
+      say "Find files matching this name: /#{match}/"
+      if options[:full_path]
+        puts Note::Page::find_path(match).map{|page| page.path}
+      else
+        puts Note::Page::find(match).map{|page| page.name}
+      end
     end
     map "f" => :find
 
