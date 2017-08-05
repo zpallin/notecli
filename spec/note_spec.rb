@@ -55,6 +55,7 @@ RSpec.describe Note do
       end 
     end 
   end
+
   describe Page do
     include FakeFS::SpecHelpers
     it "can be created" do
@@ -65,6 +66,19 @@ RSpec.describe Note do
         expect(File.file? f1.path).to eq(true)
       end
     end
+
+    it "can find files within its pages dir" do
+      FakeFS do
+        f1 = Page.new "f1"
+        f2 = Page.new "f2"
+        f3 = Page.new "f3"
+        expect(Page::find_path("*")).to eq([f1.path, f2.path, f3.path])
+        expect(Page::find_path("*1")).to eq([f1.path])
+        expect(Page::find("*").map{|f|f.name}).to eq([f1.name, f2.name, f3.name])
+        expect(Page::find("something").map{|f|f.name}).to eq([])
+      end
+    end
+
     it "can be symlinked" do
       FakeFS do
         f1    = Page.new "f1"
@@ -73,6 +87,7 @@ RSpec.describe Note do
         expect(File.file? path).to eq(true)
       end
     end
+
     it "can be opened in a temp file with custom extensions" do
       FakeFS do
         f1 = Page::new "f1"

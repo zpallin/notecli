@@ -55,6 +55,9 @@ module Notecli
     desc "open REGEX", "opens a file (matches regex)"
     def open(*args)
       say "open the following files in order: (#{args})"
+      args.map{|f| Note::Page::find(f)}.flatten.uniq.each do |f|
+        
+      end
     end 
     map "o" => :open
 

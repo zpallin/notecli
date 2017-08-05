@@ -68,22 +68,33 @@ module Note
       self.create name
     end
 
+    # returns the correct path to the page storage dir
     def self.path_to(pagename="", config: Config.new)
       File.expand_path File.join(config.settings["pages_path"], pagename)
     end
 
+    # asserts that the page storage path exists
     def self.assert
       FileUtils.mkdir_p Page::path_to
     end
 
-    def self.find(match)
-      
+    # returns page objects for each regex matching page name
+    def self.find(match="*")
+      Page::find_path(match).map{|f| Page.new File.basename(f)}
     end
 
+    # returns full paths for each regex matching page name
+    def self.find_path(match="*")
+      Dir[(Page::path_to match)]
+    end
+
+    # creates a symlink to another path for the original path of
+    # this page
     def symlink(to_path)
       FileUtils.ln_s(@path, to_path)
     end
 
+    # runs all of the creation steps for the page dir
     def create(name)
       Page::assert
       @name = name
@@ -109,16 +120,20 @@ module Note
       to_path
     end
 
+    # removes a temp file after it is created
     def rm_temp(file_ext, parent: @config["temp_path"])
       FileUtils.rm File.join(parent, @name + ".#{file_ext}")
     end
 
+    # renames a file to a new name and checks if a file
+    # exists first 
     def rename(name)
       FileUtils.mv @path, Page::path_to(name)
       self.create name
       return true
     end
 
+    # delete the page
     def delete
       FileUtils.rm @path
     end
@@ -130,6 +145,7 @@ module Note
       end
     end
 
+    # prepends the top of a note with a new line
     def prepend(string)
 			File.open(@path, "r") do |orig|
 					File.unlink(@path)
