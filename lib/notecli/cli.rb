@@ -43,6 +43,7 @@ module Notecli
 	end
 
   class CLI < Thor
+    config = Note::Config.new
 
 		desc "groups REGEX", "lists all groups, or what groups match"
 		def groups(match=nil)
@@ -54,16 +55,21 @@ module Notecli
 		end
 
     desc "open REGEX", "opens a file (matches regex)"
-    option :'exists', :type => :boolean
-    option :editor, :type => :string
-    option :ext, :type => :string
+    option :'match', :type => :boolean, :default => false
+    option :editor, :type => :string, :default => config.settings["editor"]
+    option :ext, :type => :string, :default => config.settings["ext"]
     def open(*args)
-      say "open the following files in order: (#{args})"
-      config = Note::Config.new
-      editor = options[:editor] || config.settings["editor"]
-      ext = options[:ext] || config.settings["ext"]
-      args.map{|f| Note::Page::find(f)}.flatten.uniq.each do |page|
-        page.open editor: editor, ext: ext
+      list = []
+      if options[:match]
+        say "open the following files in order: (#{args})"
+        list = args.map{|f| Note::Page::find(f)}.flatten.uniq
+      else
+        say "open \"#{args}\""
+        list = args.map{|f| Note::Page.new f}.uniq
+      end
+
+      list.each do |page|
+        page.open editor: options[:editor], ext: options[:ext]
       end
     end
     map "o" => :open

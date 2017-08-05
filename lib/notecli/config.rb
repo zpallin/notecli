@@ -79,12 +79,12 @@ module Note
     end
 
     # returns page objects for each regex matching page name
-    def self.find(match="*", exists=false)
+    def self.find(match="*")
       Page::find_path(match).map{|f| Page.new File.basename(f)}
     end
 
     # returns full paths for each regex matching page name
-    def self.find_path(match="*", exists=false)
+    def self.find_path(match="*")
       Dir[(Page::path_to match)]
     end
 
