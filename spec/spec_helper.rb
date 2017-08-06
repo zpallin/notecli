@@ -1,3 +1,10 @@
+
+require 'coveralls'
+Coveralls.wear!
+
+require "simplecov"
+SimpleCov.start
+
 require "bundler/setup"
 require "notecli"
 require "fakefs/spec_helpers"
