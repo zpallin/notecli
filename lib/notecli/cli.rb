@@ -5,6 +5,7 @@ require "highline/import"
 
 module Notecli
 
+  ############################################################################## 
 	# used to link pages and groups together
 	class Link < Thor
 		desc "groups MATCH [MATCH...] --to-page PAGE", "links groups to a page"
@@ -24,6 +25,7 @@ module Notecli
 			end
 		end
 
+    ############################################################################ 
 		desc "pages MATCH [MATCH...] --to-group GROUP", "links pages to a group"
 		option :"to-group", :type => :string
 		def pages(*args)
@@ -42,6 +44,7 @@ module Notecli
 		end
 	end
 
+  ##############################################################################
   class CLI < Thor
     config = Note::Config.new
 
@@ -54,6 +57,7 @@ module Notecli
 			end
 		end
 
+    ############################################################################   
     # opens one or more files inside notecli
     desc "open REGEX", "opens a file (matches regex)"
     option :'match', 
@@ -87,6 +91,7 @@ module Notecli
     end
     map "o" => :open
 
+    ############################################################################
     desc "find \"MATCH\"", "finds files with matching names"
     option :full_path, 
            :default => false,
@@ -102,13 +107,21 @@ module Notecli
     end
     map "f" => :find
 
-    desc "match REGEX", "finds files with matching data"
-    def match(*args)
-      say "Match for this string: /#{args}/"
-    end
-    map "m" => :match
+    ############################################################################
+    desc "search REGEX", "finds files with matching data"
+    def search(match)
+      say "Match for this string: /#{match}/"
+      res = Note::Page::search(match)
 
-    desc "config [KEY=VALUE ...]", "set config keys on the command line (nesting works)"
+      res.each do |r|
+        puts "#{r[:page].name}:#{r[:line]} -> #{r[:grep]}"
+      end
+    end
+    map "s" => :search
+
+    ############################################################################
+    desc "config [KEY=VALUE ...]", 
+         "set config keys on the command line (nesting works)"
     def config(*args)
       say "set the following configs: #{args}"
     end
@@ -118,7 +131,5 @@ module Notecli
 		subcommand :link, Link
 		map "l" => :link
   end
-
-  
 end
 

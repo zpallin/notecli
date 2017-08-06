@@ -88,6 +88,26 @@ module Note
       Dir[(Page::path_to match)]
     end
 
+    def self.search(match="*")
+      found = []
+      self::find.each do |page|
+        # supposedly will be more memory efficient
+        open(page.path) do |f|
+
+          # from The Tin man
+          # https://stackoverflow.com/questions/5761348/ruby-grep-with-line-number
+          grep = f.each_line.with_index(1).inject([]) { |m,i| m << i if (i[0][match]); m }
+
+          if grep.length > 0
+            grep.each do |g|
+              found << {page: page, grep: g.first, line: g.last}
+            end
+          end
+        end
+      end
+      return found || []
+    end
+
     # creates a symlink to another path for the original path of
     # this page
     def symlink(to_path)
