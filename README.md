@@ -1,3 +1,5 @@
+[![Coverage Status](https://coveralls.io/repos/github/zpallin/notecli/badge.svg?branch=master)](https://coveralls.io/github/zpallin/notecli?branch=master) 
+
 # Notecli
 
 Notecli is a command line application that allows you to write, organize, and manage your notes while you develop on the command line.
