@@ -1,4 +1,4 @@
-[![Coverage Status](https://coveralls.io/repos/github/zpallin/notecli/badge.svg?branch=master)](https://coveralls.io/github/zpallin/notecli?branch=master) 
+[![Build Status](https://travis-ci.org/zpallin/notecli.svg?branch=master)](https://travis-ci.org/zpallin/notecli) [![Coverage Status](https://coveralls.io/repos/github/zpallin/notecli/badge.svg?branch=master)](https://coveralls.io/github/zpallin/notecli?branch=master) 
 
 # Notecli
 
