@@ -122,11 +122,20 @@ module Notecli
     ############################################################################
     desc "config [KEY=VALUE ...]", 
          "set config keys on the command line (nesting works)"
-    def config(*args)
-      say "set the following configs: #{args}"
+    def config(key=nil, value=nil)
+      conf = Note::Config.new
+      if value
+        say "setting #{key} to #{value}"
+        conf.set(key, value)
+      elsif key
+        puts "#{conf.settings[key]}"
+      else
+        puts conf.settings.to_yaml
+      end
     end
     map "c" => :config
 
+    ############################################################################
 		desc "link SUBCOMMAND [OPTIONS]", "used to link groups and pages"
 		subcommand :link, Link
 		map "l" => :link

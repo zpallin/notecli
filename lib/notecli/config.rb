@@ -222,7 +222,7 @@ module Note
     def initialize
       user_home = File.expand_path("~")
       @settings = Config::default
-      @files = ["#{user_home}/.notecli/config.yml"]
+      @path = "#{user_home}/.notecli/config.yml"
       self.load
     end
 
@@ -238,14 +238,26 @@ module Note
       }
     end
 
+    def last_updated
+      self.set("last_updated", DateTime.now.strftime("%Y-%m-%d %H:%M"))
+    end
+
+    def set(key, value)
+      settings = self.load
+      settings[key] = value
+      config_path = File.expand_path(@path)
+      open(config_path, "w") do |c|
+        c.write settings.to_yaml
+      end
+      self.last_updated if key != "last_updated"
+    end
+
     # loads configuration file which should be in the local profile or
     # etc. Examples include /etc/noterc and ~/.noterc
     def load
-      @files.each do |c|
-        config = File.expand_path(c)
-        if File.exists? config
-          @settings.deep_merge!(YAML.load_file(config))
-        end
+      config = File.expand_path(@path)
+      if File.exists? config
+        @settings.deep_merge!(YAML.load_file(config))
       end
       @settings
     end
