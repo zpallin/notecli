@@ -49,12 +49,22 @@ module Notecli
     config = Note::Config.new
 
 		desc "groups REGEX", "lists all groups, or what groups match"
-		def groups(match=nil)
+    option :'with-contents',
+           :type => :boolean,
+           :default => false,
+           :aliases => [:'-w']
+		def groups(match=".*")
 			if match
 				say "list all groupings with match \"#{match}\""
 			else
 				say "list all groupings"
 			end
+
+      if options[:'with-contents']
+        puts Note::Group::list_contents(match).to_yaml
+      else
+        puts Note::Group::list(match).to_yaml
+      end
 		end
 
     ############################################################################   

@@ -27,6 +27,21 @@ module Note
       FileUtils.mkdir_p Group::path_to
     end
 
+    def self.list(match=".*", config: Config.new)
+      Group::assert
+
+      all_groups = Dir.entries(Group::path_to).reject{|g| g =~ /^\.\.?$/}
+      all_groups.select{|g| g =~ /#{match}/}
+    end
+
+    def self.list_contents(match=".*", config: Config.new)
+      contents = {}
+      Group::list(match).each do |groupName|
+        pages = Dir.entries(Group::path_to(groupName)).reject{|g| g =~ /^\.\.?$/}
+        contents[groupName] = pages
+      end
+      contents
+    end
     # returns the dir -- automatically creates it if not done
     def create(name)
       Group::assert
