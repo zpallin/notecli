@@ -31,7 +31,7 @@ module Notecli
 		def pages(*args)
 			groupName = options[:"to-group"]
 			if groupName
-				puts "linking #{group} to:"
+				puts "linking #{groupName} to:"
         group = Note::Group.new groupName
 		    args.each do |pageName|
           puts " - #{pageName}"
