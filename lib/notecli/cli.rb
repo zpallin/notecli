@@ -84,11 +84,11 @@ module Notecli
     def open(*args)
       list = []
       if options[:match]
-        say "open the following files in order: (#{args})"
         list = args.map{|f| Note::Page::find(f)}.flatten.uniq
+        say "open the following files in order: (#{list.map{|p| p.name}})"
       else
-        say "open \"#{args}\""
         list = args.map{|f| Note::Page.new f}.uniq
+        say "open \"#{list.map{|p| p.name}}\""
       end
 
       if list.length == 1

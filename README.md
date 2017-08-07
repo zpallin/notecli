@@ -63,10 +63,23 @@ Note will open a file and save it in its pages directory located at `~/.notecli/
 If you forget the name of your file, you can run a string match to find it.
 
 ```bash
-$ note find f*1
+$ note find "f*"
+Find files matching this name: /f*/
+filename3
+filename1
+filename2
 ```
 
-And if you want to remove your page, you can just run a regex match to delete anything matching that string:
+Then again, you can just open files with a string match too. In fact, it will open all of the matching files in order using your favorite command line text editor:
+
+```bash
+$ note open "f*" --match
+open the following files in order: (["filename3", "filename1", "filename2"])
+```
+
+### Removing Pages
+
+If you want to remove a page, you can just run a regex match to delete anything matching that string:
 
 ```bash
 $ ./bin/note find f*
