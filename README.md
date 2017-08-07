@@ -30,6 +30,69 @@ Or install it yourself as:
 
 ## Usage
 
+```bash
+$ cd $path_to_notecli
+$ bundle --version
+Bundler version 1.15.3
+$ bundle exec rake install
+$ note
+Commands:
+  note config [KEY=VALUE ...]     # set config keys on the command line (nesting works)
+  note find "MATCH"               # finds files with matching names
+  note groups REGEX               # lists all groups, or what groups match
+  note help [COMMAND]             # Describe available commands or one specific command
+  note link SUBCOMMAND [OPTIONS]  # used to link groups and pages
+  note open REGEX                 # opens a file (matches regex)
+  note search REGEX               # finds files with matching data
+```
+
+When installed, note runs with the command `note`. It uses [thor](http://whatisthor.com/) for CLI, which should give you some indiciation how it runs.
+
+At this point, all of the commands "work" but ongoing changes to functionality will occur and this is not stable, hence version `0.0.1`.
+
+### basic functions
+
+To add a new note, simply run:
+
+```bash
+$ note open filename1
+```
+
+Note will open a file and save it in its pages directory located at `~/.notecli/pages`. Because of the way notecli works, you do not have to open the file from this directory, the command works fine.
+
+If you forget the name of your file, you can run a string match to find it.
+
+```bash
+$ note find f*1
+```
+
+And if you want to remove your page, you can just run a regex match to delete anything matching that string:
+
+```bash
+$ ./bin/note find f*
+Find files matching this name: /f*/
+filename
+filename1
+filename2
+$ ./bin/note rm f*
+Delete filename? (y/n) y
+Delete filename1? (y/n) y
+Delete filename2? (y/n) y
+$ ./bin/note find f*
+Find files matching this name: /f*/
+```
+
+### file format
+You can easily use syntax formatting by forcing an extension on your file when you open it. 
+
+```bash
+$ note open filename1 --ext markdown
+$ note open datafile1 --ext json
+```
+
+### more
+
+There is a lot more functionality packed in here, so feel free to explore the options.
 
 
 ## Development

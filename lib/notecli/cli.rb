@@ -146,6 +146,40 @@ module Notecli
     map "c" => :config
 
     ############################################################################
+    
+    desc "rm MATCH",
+         "removes a file with name match"
+    option :force,
+           :type => :boolean,
+           :aliases => [:'-f']
+    def rm(match)
+      Note::Page::find(match).each do |page|
+        if !options[:force]
+          delete = ask "Delete #{page.name}? (y/n)"
+          next if delete.downcase != "y"
+        end
+        page.delete
+      end
+      
+    end
+
+    ############################################################################
+    desc "rmg MATCH",
+         "removes a group with name match"
+    option :'force',
+           :type => :boolean,
+           :aliases => [:'-f']
+    def rmg(match)
+      Note::Group::find(match).each do |group|
+        if !options[:force]
+          delete = ask "Delete #{group.name}? (y/n)"
+          next if delete.downcase != "y"
+        end
+        group.delete
+      end
+    end
+    
+    ############################################################################
 		desc "link SUBCOMMAND [OPTIONS]", "used to link groups and pages"
 		subcommand :link, Link
 		map "l" => :link
