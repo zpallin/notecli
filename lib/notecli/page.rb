@@ -160,7 +160,8 @@ module Note
 
     # returns file contents as string
     def read
-      IO.read @path
+      file = File.open(@path)
+      file.read
     end
   end
 end
