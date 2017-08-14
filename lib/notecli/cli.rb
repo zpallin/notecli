@@ -1,6 +1,8 @@
 
 require 'thor'
 require 'notecli/config'
+require 'notecli/group'
+require 'notecli/page'
 require "highline/import"
 
 module Notecli
