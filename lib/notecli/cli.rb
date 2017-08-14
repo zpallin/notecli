@@ -84,21 +84,24 @@ module Notecli
            :default => config.settings["ext"],
            :aliases => [:'-x']
     def open(*args)
-      list = []
       if options[:match]
-        list = args.map{|f| Note::Page::find(f)}.flatten.uniq
-        say "open the following files in order: (#{list.map{|p| p.name}})"
+        list = args.map{|f| Note::Page::find(f.name)}.flatten
       else
-        list = args.map{|f| Note::Page.new f}.uniq
-        say "open \"#{list.map{|p| p.name}}\""
+        list = args.map{|f| Note::Page.new(f)}.flatten
       end
 
-      if list.length == 1
+      fileNames = list.map{|p| p.name}
+      if list.length > 0
+        say "open the following files in order: (#{fileNames})"
+        Note::Page::open_multiple(
+          list, 
+          editor: options[:editor],
+          ext: options[:ext])
+      elsif list.length == 1
+        say "open \"#{fileNames.first}\""
         list.first.open editor: options[:editor], ext: options[:ext]
       else
-        Note::Page::open_multiple(list, 
-                                  editor: options[:editor],
-                                  ext: options[:ext])
+        say "no matches; could not open any files (#{fileNames})"
       end
     end
     map "o" => :open

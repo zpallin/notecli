@@ -70,7 +70,10 @@ module Note
       Page::assert
       @name = name
       @path = Page::path_to name
-      FileUtils.mkdir_p File.dirname(@path)
+      self.touch
+    end
+
+    def touch
       FileUtils.touch(@path)
     end
 
@@ -82,6 +85,14 @@ module Note
       temp = self.temp ext
       system(editor, temp)
       self.rm_temp ext
+      self.cleanup!
+    end
+
+    def cleanup!
+      data = self.read.split.join(" ")
+      if data == ""
+        self.delete
+      end
     end
 
     def self.open_multiple(pages, 
@@ -89,10 +100,15 @@ module Note
                            ext: @config["ext"])
       Page::assert
       temps = pages.map{|page| page.temp ext}
-      conns = "#{editor} #{temps.join(' ')}"
-      system(conns)
-      #system(editor, temps.join(' '))
-      pages.map{|page| page.rm_temp ext}
+      if temps.length > 0
+        conns = "#{editor} #{temps.join(' ')}"
+        system(conns)
+        pages.each do |page|
+          page.rm_temp ext
+          page.cleanup!
+        end
+      end  
+      temps
     end
 
     # creates a symlink in a temp directory
@@ -105,7 +121,10 @@ module Note
 
     # removes a temp file after it is created
     def rm_temp(file_ext, parent: @config["temp_path"])
-      FileUtils.rm File.join(parent, @name + ".#{file_ext}")
+      path = File.join(parent, @name + ".#{file_ext}")
+      if File.file? path
+        FileUtils.rm path
+      end
     end
 
     # renames a file to a new name and checks if a file
@@ -141,8 +160,7 @@ module Note
 
     # returns file contents as string
     def read
-      file = File.open(@path)
-      file.read
+      IO.read @path
     end
   end
 end
