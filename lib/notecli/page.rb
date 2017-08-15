@@ -113,7 +113,10 @@ module Note
 
     # creates a symlink in a temp directory
     def temp(ext, parent: @config["temp_path"])
-      to_path = File.join(parent, @name + "." + ext)
+      to_path = File.join(
+        parent, 
+        [@name, ext].join(".")
+      )
       FileUtils.mkdir_p parent
       self.symlink to_path
       to_path
@@ -121,7 +124,7 @@ module Note
 
     # removes a temp file after it is created
     def rm_temp(file_ext, parent: @config["temp_path"])
-      path = File.join(parent, @name + ".#{file_ext}")
+      path = File.join(parent, [@name, file_ext].join("."))
       if File.file? path
         FileUtils.rm path
       end

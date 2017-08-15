@@ -5,21 +5,103 @@ require 'notecli/group'
 require 'notecli/page'
 require "highline/import"
 
-module Notecli
+################################################################################
+# boilerplate file operational logic
 
+# process_pages
+#   compiles the list of requested pages and returns them -- standardized
+#   for multiple types of requests.
+#   - match => boolean # whether or not we will try to find matching pages
+#   - args => [] # pass the args from the cli input
+def process_pages(match, args)
+  if match
+    return args.map{|f| 
+      Note::Page::find(f)
+    }.flatten.map{|f|
+      f.name
+    }.uniq.map{|f| 
+      Note::Page.new f
+    }
+  else
+    return args.map{|f| Note::Page.new(f)}.flatten
+  end
+end
+
+# file_op
+#   all file operations will have the same behavior: 
+#
+#   - `one` for single pages
+#   - `many` for multiple pages
+#   - `none` for no pages supplied
+#
+#   from this interaction you will inject the logic as lambdas
+#   this will be exposed as a block, similar to chef providers
+#   which will help with cleanliness.
+def file_op(name)
+  @name = name 
+  @match = false
+  @verbose = false
+  @one, @many, @none = [nil] * 3
+
+  def match(m=true)
+    @match = m
+  end
+
+  def verbose(v=false)
+    @verbose = v
+  end
+
+  def pages(pgs=[])
+    @pages = pgs
+  end
+
+  def action(func)
+    instance_variable_set :"@#{__callee__}", func
+  end
+
+  alias one action
+  alias many action
+  alias none action
+
+  yield
+
+  @pages = process_pages @match, @pages
+  @pnames = @pages.map{|p| p.name}
+
+  if @one and @pages.length == 1
+
+    say "#{@name}: \"#{@pnames.first}\"" if @verbose
+    @one.call @pages if @one.respond_to? :call
+
+  elsif @many and @pages.length > 1 and @many
+
+    say "#{@name} in order: (#{@pnames})" if @verbose
+    @many.call @pages if @many.respond_to? :call
+
+  elsif @none
+
+    say "no matches (#{@pnames})" if @verbose
+    @none.call @pages if @none.respond_to? :call
+
+  end
+  pages
+end
+
+module Notecli
   ############################################################################## 
 	# used to link pages and groups together
 	class Link < Thor
+  include Note
 		desc "groups MATCH [MATCH...] --to-page PAGE", "links groups to a page"
 		option :"to-page", :type => :string
 		def groups(*args)
 			pageName = options[:"to-page"]
 			if pageName
 				puts "linking #{pageName} to:"
-				page = Note::Page.new pageName
+				page = Page.new pageName
 				args.each do |groupName|
           puts " - #{groupName}"
-					group = Note::Group.new groupName
+					group = Group.new groupName
 					group.add page
 				end
 			else
@@ -34,10 +116,10 @@ module Notecli
 			groupName = options[:"to-group"]
 			if groupName
 				puts "linking #{groupName} to:"
-        group = Note::Group.new groupName
+        group = Group.new groupName
 		    args.each do |pageName|
           puts " - #{pageName}"
-          page = Note::Page.new pageName
+          page = Page.new pageName
           group.add page
         end    
 			else
@@ -48,7 +130,8 @@ module Notecli
 
   ##############################################################################
   class CLI < Thor
-    config = Note::Config.new
+  include Note
+    config = Config.new
 
 		desc "groups [GROUP]", "lists all groups, or what groups match"
     option :'with-contents',
@@ -63,11 +146,14 @@ module Notecli
 			end
 
       if options[:'with-contents']
-        puts Note::Group::list_contents(match).to_yaml
+        puts Group::list_contents(match).to_yaml
       else
-        puts Note::Group::list(match).to_yaml
+        puts Group::list(match).to_yaml
       end
 		end
+
+    no_commands do
+        end
 
     ############################################################################   
     # opens one or more files inside notecli
@@ -88,25 +174,24 @@ module Notecli
            :aliases => [:'-v'],
            :default => false
     def open(*args)
-      if options[:match]
-        list = args.map{|f| Note::Page::find(f.name)}.flatten
-      else
-        list = args.map{|f| Note::Page.new(f)}.flatten
+      ops = options
+ 
+      file_op :open do
+        match ops[:match]
+        pages args
+        verbose ops[:verbose]
+
+        many lambda { |pages| 
+          Page::open_multiple pages, ext: ops[:ext], editor: ops[:editor]
+        }
+
+        one lambda { |pages|
+          pages.first.open editor: ops[:editor], ext: ops[:ext]
+        }
+
+        none true
       end
 
-      fileNames = list.map{|p| p.name}
-      if list.length > 0
-        say "open in order: (#{fileNames})" if options[:verbose]
-        Note::Page::open_multiple(
-          list, 
-          editor: options[:editor],
-          ext: options[:ext])
-      elsif list.length == 1
-        say "open \"#{fileNames.first}\"" if options[:verbose]
-        list.first.open editor: options[:editor], ext: options[:ext]
-      else
-        say "no matches (#{fileNames})" if options[:verbose]
-      end
     end
     map "o" => :open
     
@@ -129,22 +214,23 @@ module Notecli
            :aliases => [:'-n'],
            :default => false
     def prepend(*args)
-      nl = options[:newline]? "\n" : ""
+      ops = options
+      nl = ops[:newline]? "\n" : ""
+      
+      file_op :prepend do
+        match ops[:match]
+        pages args
+        verbose ops[:verbose]
 
-      if options[:match]
-        list = args.map{|f| Note::Page::find(f.name)}.flatten
-      else
-        list = args.map{|f| Note::Page.new(f)}.flatten
-      end
+        many lambda { |page|
+          page.prepend "#{ops[:with]}#{nl}"
+        }
 
-      fileNames = list.map{|p| p.name}
-      if list.length > 0
-        say "prepend in order: (#{fileNames})" if options[:verbose]
-        list.each do |page|
-          page.prepend "#{options[:with]}#{nl}"
-        end
-      else
-        say "no matched files: (#{fileNames})" if options[:verbose]
+        one lambda { |pages|
+          pages.first.prepend "#{ops[:with]}#{nl}"
+        }
+
+        none true
       end
     end
     map "p" => :prepend
@@ -168,22 +254,25 @@ module Notecli
            :aliases => [:'-n'],
            :default => false
     def append(*args)
-      nl = options[:newline]? "\n" : ""
+      ops = options
+      nl = ops[:newline]? "\n" : ""
 
-      if options[:match]
-        list = args.map{|f| Note::Page::find(f.name)}.flatten
-      else
-        list = args.map{|f| Note::Page.new(f)}.flatten
-      end
+      file_op :append do
+        match ops[:match]
+        pages args
+        verbose ops[:verbose]
 
-      fileNames = list.map{|p| p.name}
-      if list.length > 0
-        say "append in order: (#{fileNames})" if options[:verbose]
-        list.each do |page|
-          page.append "#{nl}#{options[:with]}"
-        end
-      else
-        say "no matched files: (#{fileNames})" if options[:verbose]
+        many lambda { |pages|
+          pages.each do |page|
+            page.append "#{nl}#{ops[:with]}"
+          end
+        }
+
+        one lambda { |pages|
+          pages.first.append "#{nl}#{ops[:with]}"
+        }
+
+        none true
       end
     end
     map "a" => :append
@@ -200,20 +289,24 @@ module Notecli
            :aliases => [:'-v'],
            :default => false
     def read(*args)
-      if options[:match]
-        list = args.map{|f| Note::Page::find(f.name)}.flatten
-      else
-        list = args.map{|f| Note::Page.new(f)}.flatten
-      end
+      ops = options
 
-      fileNames = list.map{|p| p.name}
-      if list.length > 0
-        say "read in order: (#{fileNames})" if options[:verbose]
-        list.each do |page|
-          puts page.read
-        end
-      else
-        say "no matched files: (#{fileNames})" if options[:verbose]
+      file_op :read do
+        match ops[:match]
+        pages args
+        verbose ops[:verbose]
+
+        many lambda { |pages|
+          pages.each do |pages|
+            puts pages.read
+          end
+        }
+
+        one lambda { |pages|
+          puts pages.first.read
+        }
+
+        none true
       end
     end
     map "r" => :read
@@ -228,9 +321,9 @@ module Notecli
     def find(match="*")
       say "Find files matching this name: /#{match}/"
       if options[:full_path]
-        puts Note::Page::find_path(match).map{|page| page.path}
+        puts Page::find_path(match).map{|page| page.path}
       else
-        puts Note::Page::find(match).map{|page| page.name}
+        puts Page::find(match).map{|page| page.name}
       end
     end
     map "f" => :find
@@ -239,7 +332,7 @@ module Notecli
     desc "search REGEX", "finds files with matching data"
     def search(match)
       say "Match for this string: /#{match}/"
-      res = Note::Page::search(match)
+      res = Page::search(match)
 
       res.each do |r|
         puts "#{r[:page].name}:#{r[:line]} -> #{r[:grep]}"
@@ -251,7 +344,7 @@ module Notecli
     desc "config [KEY=VALUE ...]", 
          "set config keys on the command line (nesting works)"
     def config(key=nil, value=nil)
-      conf = Note::Config.new
+      conf = Config.new
       if value
         say "setting #{key} to #{value}"
         conf.set(key, value)
@@ -271,7 +364,7 @@ module Notecli
            :type => :boolean,
            :aliases => [:'-f']
     def rm(match)
-      Note::Page::find(match).each do |page|
+      Page::find(match).each do |page|
         if !options[:force]
           delete = ask "Delete #{page.name}? (y/n)"
           next if delete.downcase != "y"
@@ -287,7 +380,7 @@ module Notecli
            :type => :boolean,
            :aliases => [:'-f']
     def rmg(match)
-      Note::Group::find(match).each do |group|
+      Group::find(match).each do |group|
         if !options[:force]
           delete = ask "Delete #{group.name}? (y/n)"
           next if delete.downcase != "y"
