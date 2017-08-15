@@ -14,37 +14,32 @@ Notecli is a command line application that allows you to write, organize, and ma
 
 ## Installation
 
-Add this line to your application's Gemfile:
+I have not pushed this to rubygems yet, so bear with me:
 
-```ruby
-gem 'notecli'
 ```
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install notecli
-
-## Usage
-
-```bash
-$ cd $path_to_notecli
+$ cd $some_repo_directory
+$ git clone https://github.com/zpallin/notecli
+$ cd notecli
 $ bundle --version
 Bundler version 1.15.3
 $ bundle exec rake install
 $ note
 Commands:
-  note config [KEY=VALUE ...]     # set config keys on the command line (nesting works)
-  note find "MATCH"               # finds files with matching names
-  note groups REGEX               # lists all groups, or what groups match
-  note help [COMMAND]             # Describe available commands or one specific command
-  note link SUBCOMMAND [OPTIONS]  # used to link groups and pages
-  note open REGEX                 # opens a file (matches regex)
-  note search REGEX               # finds files with matching data
+  note append PAGE -w, --with=WITH   # appends a page
+  note config [KEY=VALUE ...]        # set config keys on the command line (nesting works)
+  note find "MATCH"                  # finds files with matching names
+  note groups [GROUP]                # lists all groups, or what groups match
+  note help [COMMAND]                # Describe available commands or one specific command
+  note link SUBCOMMAND [OPTIONS]     # used to link groups and pages
+  note open PAGE                     # opens a page by name or name match
+  note prepend PAGE -w, --with=WITH  # prepends a page
+  note read PAGE                     # read a page
+  note rm MATCH                      # removes a file with name match
+  note rmg MATCH                     # removes a group with name match
+  note search REGEX                  # finds files with matching data
 ```
+
+## Usage
 
 When installed, note runs with the command `note`. It uses [thor](http://whatisthor.com/) for CLI, which should give you some indiciation how it runs.
 
