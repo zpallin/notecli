@@ -12,12 +12,12 @@ RSpec.describe Note do
     include FakeFS::SpecHelpers
     
     it "can be created" do
-      FakeFS.activate!
+      FakeFS do
         group = Group.new "testgroup"
         expect(group.name).to eq("testgroup")
         expect(group.path).to eq(Group::path_to "testgroup")
         expect(File.directory? group.path).to eq(true)
-      FakeFS.deactivate!
+      end
     end
 
     it "can add a page to its group" do

@@ -3,95 +3,15 @@ require 'thor'
 require 'notecli/config'
 require 'notecli/group'
 require 'notecli/page'
+require 'notecli/helpers'
 require "highline/import"
-
-################################################################################
-# boilerplate file operational logic
-
-# process_pages
-#   compiles the list of requested pages and returns them -- standardized
-#   for multiple types of requests.
-#   - match => boolean # whether or not we will try to find matching pages
-#   - args => [] # pass the args from the cli input
-def process_pages(match, args)
-  if match
-    return args.map{|f| 
-      Note::Page::find(f)
-    }.flatten.map{|f|
-      f.name
-    }.uniq.map{|f| 
-      Note::Page.new f
-    }
-  else
-    return args.map{|f| Note::Page.new(f)}.flatten
-  end
-end
-
-# file_op
-#   all file operations will have the same behavior: 
-#
-#   - `one` for single pages
-#   - `many` for multiple pages
-#   - `none` for no pages supplied
-#
-#   from this interaction you will inject the logic as lambdas
-#   this will be exposed as a block, similar to chef providers
-#   which will help with cleanliness.
-def file_op(name)
-  @name = name 
-  @match = false
-  @verbose = false
-  @one, @many, @none = [nil] * 3
-
-  def match(m=true)
-    @match = m
-  end
-
-  def verbose(v=false)
-    @verbose = v
-  end
-
-  def pages(pgs=[])
-    @pages = pgs
-  end
-
-  def action(func)
-    instance_variable_set :"@#{__callee__}", func
-  end
-
-  alias one action
-  alias many action
-  alias none action
-
-  yield
-
-  @pages = process_pages @match, @pages
-  @pnames = @pages.map{|p| p.name}
-
-  if @one and @pages.length == 1
-
-    say "#{@name}: \"#{@pnames.first}\"" if @verbose
-    @one.call @pages if @one.respond_to? :call
-
-  elsif @many and @pages.length > 1 and @many
-
-    say "#{@name} in order: (#{@pnames})" if @verbose
-    @many.call @pages if @many.respond_to? :call
-
-  elsif @none
-
-    say "no matches (#{@pnames})" if @verbose
-    @none.call @pages if @none.respond_to? :call
-
-  end
-  pages
-end
 
 module Notecli
   ############################################################################## 
 	# used to link pages and groups together
 	class Link < Thor
   include Note
+  include Helpers
 		desc "groups MATCH [MATCH...] --to-page PAGE", "links groups to a page"
 		option :"to-page", :type => :string
 		def groups(*args)
@@ -131,6 +51,7 @@ module Notecli
   ##############################################################################
   class CLI < Thor
   include Note
+  include Helpers
     config = Config.new
 
 		desc "groups [GROUP]", "lists all groups, or what groups match"
@@ -176,7 +97,7 @@ module Notecli
     def open(*args)
       ops = options
  
-      file_op :open do
+      page_op :open do
         match ops[:match]
         pages args
         verbose ops[:verbose]
@@ -217,7 +138,7 @@ module Notecli
       ops = options
       nl = ops[:newline]? "\n" : ""
       
-      file_op :prepend do
+      page_op :prepend do
         match ops[:match]
         pages args
         verbose ops[:verbose]
@@ -257,7 +178,7 @@ module Notecli
       ops = options
       nl = ops[:newline]? "\n" : ""
 
-      file_op :append do
+      page_op :append do
         match ops[:match]
         pages args
         verbose ops[:verbose]
@@ -291,7 +212,7 @@ module Notecli
     def read(*args)
       ops = options
 
-      file_op :read do
+      page_op :read do
         match ops[:match]
         pages args
         verbose ops[:verbose]
