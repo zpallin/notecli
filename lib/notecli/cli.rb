@@ -309,8 +309,44 @@ module Notecli
         group.delete
       end
     end
-    
     ############################################################################
+    desc "import FILE [FILE...]",
+         "import multiple files into notecli"
+    option :prefix,
+           :type => :string,
+           :aliases => [:'-p']
+    option :suffix,
+           :type => :string,
+           :aliases => [:'-s']
+    option :rename,
+           :type => :string,
+           :aliases => [:'-r']
+    option :force,
+           :type => :boolean,
+           :default => false,
+           :aliases => [:'-f']
+    def import(*files)
+      files.each do |file|
+        pagename = File.basename(file)
+
+        if options[:rename]
+          pagename = options[:rename]
+        end
+
+        pagename = options[:prefix] + pagename if options[:prefix]
+        pagename = pagename + options[:suffix] if options[:suffix]
+
+        if not options[:force] and Page::exists? pagename
+          puts "Page \"#{pagename}\" already exists"
+          next
+        end
+
+        page = Page.new pagename
+        data = File.open(file).read
+        page.append(data)
+      end
+    end
+        
 		desc "link SUBCOMMAND [OPTIONS]", "used to link groups and pages"
 		subcommand :link, Link
 		map "l" => :link

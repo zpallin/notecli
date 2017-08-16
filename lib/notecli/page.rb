@@ -28,6 +28,10 @@ module Note
       FileUtils.mkdir_p Page::path_to
     end
 
+    def self.exists?(pagename)
+      File.exists? Page::path_to(pagename) 
+    end
+
     # returns page objects for each matching page name
     def self.find(match="*")
       Page::find_path(match).map{|f| Page.new File.basename(f)}
