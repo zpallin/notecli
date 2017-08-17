@@ -84,10 +84,15 @@ module Note
     # opens a file with the editor and file type provided
     # a file is symlinked to a tmp directory and opened with 
     # a different file extension
-    def open(editor: @config["editor"], ext: @config["ext"])
+    def open(editor: nil, ext: nil)
+
+      editor ||= @config["editor"]
+      ext ||= @config["ext"]
+
       Page::assert
       temp = self.temp ext
-      system(editor, temp)
+
+      system(editor.to_s, temp.to_s)
       self.rm_temp ext
       self.cleanup!
     end
@@ -99,9 +104,11 @@ module Note
       end
     end
 
-    def self.open_multiple(pages, 
-                           editor: @config["editor"], 
-                           ext: @config["ext"])
+    def self.open_multiple(pages, editor: nil, ext: nil)
+      
+      editor ||= @config["editor"]
+      ext ||= @config["ext"]
+
       Page::assert
       temps = pages.map{|page| page.temp ext}
       if temps.length > 0
@@ -116,19 +123,23 @@ module Note
     end
 
     # creates a symlink in a temp directory
-    def temp(ext, parent: @config["temp_path"])
+    def temp(ext=nil, temp_path=nil)
+
+      temp_path ||= @config["temp_path"]
+      ext ||= @config["ext"]
+     
       to_path = File.join(
-        parent, 
+        temp_path, 
         [@name, ext].join(".")
       )
-      FileUtils.mkdir_p parent
+      FileUtils.mkdir_p temp_path
       self.symlink to_path
       to_path
     end
 
     # removes a temp file after it is created
-    def rm_temp(file_ext, parent: @config["temp_path"])
-      path = File.join(parent, [@name, file_ext].join("."))
+    def rm_temp(file_ext, temp_path: @config["temp_path"])
+      path = File.join(temp_path, [@name, file_ext].join("."))
       if File.file? path
         FileUtils.rm path
       end

@@ -90,7 +90,7 @@ RSpec.describe Note do
 
     it "can be opened in a temp file with custom extensions" do
       FakeFS do
-        f1 = Page::new "f1"
+       f1 = Page::new "f1"
         expect(f1).to receive(:system).with(
           "vi", File.expand_path("~/.notecli/temp/f1.txt"))
         f1.open
