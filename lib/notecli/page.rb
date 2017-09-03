@@ -91,7 +91,6 @@ module Note
 
       Page::assert
       temp = self.temp ext
-
       system(editor.to_s, temp.to_s)
       self.rm_temp ext
       self.cleanup!

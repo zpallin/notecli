@@ -7,11 +7,13 @@ require "notecli/version"
 require "notecli/page"
 require "notecli/group"
 require "notecli/config"
+require "notecli/helpers"
 
 Link = Notecli::Link
 CLI = Notecli::CLI
 
 RSpec.describe Notecli do
+  include Helpers
   it "has a version number" do
     expect(Notecli::VERSION).not_to be nil
   end
@@ -20,17 +22,13 @@ RSpec.describe Notecli do
     context "open" do
       it "can open a file" do
         FakeFS do
+          allow(Page).to receive_messages(:open => "hello")
           f1 = Page.new "f1"
           conf = Config.new
           
-          expect(Page).to receive(:system).with(
-            "vi", 
-            File.expand_path(File.join("~",".notecli","temp","f1.txt")))
+          expect(subject).to receive(:page_op).with(:open)
           
-          data = capture2(:stdout) { 
-            subject.open("f1")
-          }
-          puts "OUTPUT: #{data}"
+          data = capture(:stdout){ subject.open("f1") }
         end
       end
       it "can open with a different editor or file extension" do
@@ -39,10 +37,10 @@ RSpec.describe Notecli do
           conf.set "editor", "nano"
           conf.set "ext", "md"
           f1 = Page.new "f1"
-          #expect(f1).to receive(:system).with(
-          #  "nano", 
-          #  File.expand_path(File.join("~",".notecli","temp","f1.md")))
-          #f1.open
+          expect(f1).to receive(:system).with(
+            "nano", 
+            File.expand_path(File.join("~",".notecli","temp","f1.md")))
+          f1.open
         end
       end
       it "can open files matching a basic string match" do

@@ -16,7 +16,7 @@ Notecli is a command line application that allows you to write, organize, and ma
 
 I have not pushed this to rubygems yet, so bear with me:
 
-```
+```bash
 $ cd $some_repo_directory
 $ git clone https://github.com/zpallin/notecli
 $ cd notecli
