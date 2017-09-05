@@ -20,7 +20,7 @@ module Note
     end
 
     def self.path_to(groupname="", config: Config.new)
-      File.expand_path File.join(config.settings["groups_path"], groupname)
+      File.expand_path File.join(config.settings["group_path"], groupname)
     end
 
     def self.assert

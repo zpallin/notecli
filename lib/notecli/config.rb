@@ -23,11 +23,13 @@ module Note
       {
         "last_updated" => DateTime.now.strftime("%d/%m/%Y %H:%M"),
         "store_path" => File.expand_path("~/.notecli"),
-				"groups_path" => File.expand_path("~/.notecli/groups"),
-				"pages_path" => File.expand_path("~/.notecli/pages"),
+				"group_path" => File.expand_path("~/.notecli/groups"),
+				"page_path" => File.expand_path("~/.notecli/pages"),
 				"temp_path" => File.expand_path("~/.notecli/temp"),
+        "history_path" => File.expand_path("~/.notecli"),
 				"editor" => "vi",
-				"ext" => "txt"
+				"ext" => "txt",
+        "history_size" => 100
       }
     end
 

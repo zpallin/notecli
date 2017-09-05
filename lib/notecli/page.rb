@@ -2,6 +2,7 @@
 require "fileutils"
 require "deep_merge"
 require "yaml"
+require "notecli/history"
 
 module Note
   ############################################################################## 
@@ -15,31 +16,34 @@ module Note
     
     def initialize(name, config: Config.new)
 			@config = config.settings
+      self.class.assert
       self.create name
     end
 
     # returns the correct path to the page storage dir
     def self.path_to(pagename="", config: Config.new)
-      File.expand_path File.join(config.settings["pages_path"], pagename)
+      name = self.name.split(':').last.downcase
+      path = "#{name}_path"
+      File.expand_path File.join(config.settings[path], pagename)
     end
 
     # asserts that the page storage path exists
     def self.assert
-      FileUtils.mkdir_p Page::path_to
+      FileUtils.mkdir_p self::path_to
     end
 
     def self.exists?(pagename)
-      File.exists? Page::path_to(pagename) 
+      File.exists? self::path_to(pagename) 
     end
 
     # returns page objects for each matching page name
     def self.find(match="*")
-      Page::find_path(match).map{|f| Page.new File.basename(f)}
+      self::find_path(match).map{|f| self.new File.basename(f)}
     end
 
     # returns full paths for each matching page name
     def self.find_path(match="*")
-      Dir[(Page::path_to match)]
+      Dir[(self::path_to match)]
     end
 
     def self.search(match="*")
@@ -71,9 +75,8 @@ module Note
 
     # runs all of the creation steps for the page dir
     def create(name)
-      Page::assert
       @name = name
-      @path = Page::path_to name
+      @path = self.class.path_to name
       self.touch
     end
 
@@ -84,10 +87,19 @@ module Note
     # opens a file with the editor and file type provided
     # a file is symlinked to a tmp directory and opened with 
     # a different file extension
-    def open(editor: @config["editor"], ext: @config["ext"])
-      Page::assert
+    def open(editor: nil, ext: nil)
+
+      editor ||= @config["editor"]
+      ext ||= @config["ext"]
+
+      self.class.assert
       temp = self.temp ext
-      system(editor, temp)
+      
+      system(editor.to_s, temp.to_s)
+
+      history = History.new
+      history.add self.name
+
       self.rm_temp ext
       self.cleanup!
     end
@@ -99,15 +111,19 @@ module Note
       end
     end
 
-    def self.open_multiple(pages, 
-                           editor: @config["editor"], 
-                           ext: @config["ext"])
-      Page::assert
+    def self.open_multiple(pages, editor: nil, ext: nil)
+      
+      editor ||= @config["editor"]
+      ext ||= @config["ext"]
+      history = History.new
+
+      self::assert
       temps = pages.map{|page| page.temp ext}
       if temps.length > 0
         conns = "#{editor} #{temps.join(' ')}"
         system(conns)
         pages.each do |page|
+          history.add page.name
           page.rm_temp ext
           page.cleanup!
         end
@@ -116,19 +132,23 @@ module Note
     end
 
     # creates a symlink in a temp directory
-    def temp(ext, parent: @config["temp_path"])
+    def temp(ext=nil, temp_path=nil)
+
+      temp_path ||= @config["temp_path"]
+      ext ||= @config["ext"]
+     
       to_path = File.join(
-        parent, 
+        temp_path, 
         [@name, ext].join(".")
       )
-      FileUtils.mkdir_p parent
+      FileUtils.mkdir_p temp_path
       self.symlink to_path
       to_path
     end
 
     # removes a temp file after it is created
-    def rm_temp(file_ext, parent: @config["temp_path"])
-      path = File.join(parent, [@name, file_ext].join("."))
+    def rm_temp(file_ext, temp_path: @config["temp_path"])
+      path = File.join(temp_path, [@name, file_ext].join("."))
       if File.file? path
         FileUtils.rm path
       end
@@ -137,7 +157,7 @@ module Note
     # renames a file to a new name and checks if a file
     # exists first 
     def rename(name)
-      FileUtils.mv @path, Page::path_to(name)
+      FileUtils.mv @path, self.class.path_to(name)
       self.create name
       return true
     end
@@ -145,6 +165,14 @@ module Note
     # delete the page
     def delete
       FileUtils.rm @path
+    end
+
+    # write file
+    def write(data)
+      data = data.join("\n") if data.kind_of?(Array)
+
+      file = File.open(self.path, "w")
+      file.write(data)
     end
 
     # appends the file content with a string

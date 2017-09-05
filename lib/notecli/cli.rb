@@ -95,8 +95,8 @@ module Notecli
            :aliases => [:'-v'],
            :default => false
     def open(*args)
+      puts args 
       ops = options
- 
       page_op :open do
         match ops[:match]
         pages args

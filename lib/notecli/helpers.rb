@@ -60,7 +60,6 @@ module Helpers
     alias one action
     alias many action
     alias none action
-
     
     yield if block_given?
 
