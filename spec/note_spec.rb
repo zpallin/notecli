@@ -10,9 +10,10 @@ FileOp  = Note::FileOp
 History = Note::History
 
 RSpec.describe Note do
+  include FakeFS::SpecHelpers
+  include Note
+
   describe Group do
-    include FakeFS::SpecHelpers
-    
     it "can be created" do
       FakeFS do
         group = Group.new "testgroup"
@@ -63,7 +64,6 @@ RSpec.describe Note do
   end
 
   describe Page do
-    include FakeFS::SpecHelpers
     it "can be opened in a temp file with custom extensions" do
       FakeFS do
        f1 = Page::new "f1"
@@ -95,6 +95,34 @@ RSpec.describe Note do
       end
       FakeFS.clear!
     end
+
+    context "Page::process_pages" do
+      it "takes page names as argument and filters them to pages array" do
+        FakeFS do
+          pages = Page::process_pages ["f1", "f2"]
+          expect(pages.first.class).to eq(Page)
+          expect(pages.map{|p| p.name}).to eq(["f1", "f2"])
+        end
+        FakeFS.clear!
+      end
+
+      it "can take match as a value to run string matches instead" do
+        FakeFS do
+          pages = Page::process_pages ["f1", "f2"], match: true
+          expect(pages).to eq([])
+
+          Page.new "f1"
+          Page.new "f2"
+
+          pages = Page::process_pages ["f1", "f2"], match: true
+          expect(pages.map{|p| p.name}).to eq(["f1", "f2"])
+
+          pages = Page::process_pages ["f*"], match: true
+          expect(pages.map{|p| p.name}).to eq(["f1", "f2"])
+        end
+        FakeFS.clear!
+      end
+    end
   end
 
   describe Config do
@@ -108,8 +136,6 @@ RSpec.describe Note do
   end
 
   describe FileOp do
-    include FakeFS::SpecHelpers
-    
     it "can be created" do
       FakeFS do
         f1 = FileOp.new "f1"
@@ -162,6 +188,64 @@ RSpec.describe Note do
         expect(f1.read).to eq("test3\ntest\ntest2\n")
       end
       FakeFS.clear!
+    end
+  end
+    
+  context "Note::page_op" do
+    it "acts like a chef-provider, allows for easy cli command definition" do
+      FakeFS do
+        page_op :test
+      end
+    end
+
+    it "can take multiple paramters, match, verbose, pages, and name" do
+      FakeFS do
+        page_op :test do
+          match true
+          verbose true
+          pages ["f1", "f2"]
+        end
+      end
+    end
+
+    it "can also pass lambdas for :one, :many, and :none pages found" do
+      FakeFS do
+        expect{
+          page_op :test do
+            match true
+            verbose true
+            pages ["f1", "f2"]
+            one lambda {|x| puts :one}
+            many lambda {|x| puts :many}
+            none lambda {|x| puts :none}
+          end
+        }.to output("no matches ([])\nnone\n").to_stdout
+
+        Page.new "f1"
+
+        expect{
+          page_op :test do
+            match true
+            verbose true
+            pages ["f1", "f2"]
+            one lambda {|x| puts :one}
+            many lambda {|x| puts :many}
+            none lambda {|x| puts :none}
+          end
+        }.to output("test: \"f1\"\none\n").to_stdout
+
+        Page.new "f2"
+        expect{
+          page_op :test do
+            match true
+            verbose true
+            pages ["f1", "f2"]
+            one lambda {|x| puts :one}
+            many lambda {|x| puts :many}
+            none lambda {|x| puts :none}
+          end
+        }.to output("test in order: ([\"f1\", \"f2\"])\nmany\n").to_stdout
+      end
     end
   end
 

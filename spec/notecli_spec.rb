@@ -26,6 +26,7 @@ RSpec.describe Notecli do
           f1 = Page.new "f1"
           conf = Config.new
           
+          # because Page is being called as a static method
           expect(subject).to receive(:page_op).with(:open)
           
           data = capture(:stdout){ subject.open("f1") }

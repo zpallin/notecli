@@ -103,7 +103,7 @@ module Notecli
         verbose ops[:verbose]
 
         many lambda { |pages| 
-          Page::open_multiple pages, ext: ops[:ext], editor: ops[:editor]
+          page_open_multiple pages, ext: ops[:ext], editor: ops[:editor]
         }
 
         one lambda { |pages|
