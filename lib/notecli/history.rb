@@ -8,12 +8,14 @@ module Note
   # history stores the opened files history and can be used to referenced
   # recently opened files
 
-  class History < Page
-    def initialize(name="history", config: Config.new)
-      @config = config.settings
-      self.class.assert
+  class History < FileOp
+
+    def initialize(config: Config.new)
+      @settings = config.settings
+      self.class.assert_home
       self.create "history"
     end
+
     def add(pageinput, config: Config.new)
       if pageinput.class == Page
         page = pageinput
@@ -38,5 +40,8 @@ module Note
     def list
       self.read.split("\n")
     end 
+    def self.home(config: Config.new)
+      File.expand_path config.settings["store_path"]
+    end
   end
 end
