@@ -3,7 +3,6 @@ require 'thor'
 require 'notecli/config'
 require 'notecli/group'
 require 'notecli/page'
-require 'notecli/helpers'
 require "highline/import"
 
 module Notecli
@@ -11,7 +10,6 @@ module Notecli
 	# used to link pages and groups together
 	class Link < Thor
   include Note
-  include Helpers
 		desc "groups MATCH [MATCH...] --to-page PAGE", "links groups to a page"
 		option :"to-page", :type => :string
 		def groups(*args)
@@ -51,7 +49,6 @@ module Notecli
   ##############################################################################
   class CLI < Thor
   include Note
-  include Helpers
     config = Config.new
 
 		desc "groups [GROUP]", "lists all groups, or what groups match"

@@ -7,13 +7,11 @@ require "notecli/version"
 require "notecli/page"
 require "notecli/group"
 require "notecli/config"
-require "notecli/helpers"
 
 Link = Notecli::Link
 CLI = Notecli::CLI
 
 RSpec.describe Notecli do
-  include Helpers
   it "has a version number" do
     expect(Notecli::VERSION).not_to be nil
   end
