@@ -7,13 +7,11 @@ require "notecli/version"
 require "notecli/page"
 require "notecli/group"
 require "notecli/config"
-require "notecli/helpers"
 
 Link = Notecli::Link
 CLI = Notecli::CLI
 
 RSpec.describe Notecli do
-  include Helpers
   it "has a version number" do
     expect(Notecli::VERSION).not_to be nil
   end
@@ -26,6 +24,7 @@ RSpec.describe Notecli do
           f1 = Page.new "f1"
           conf = Config.new
           
+          # because Page is being called as a static method
           expect(subject).to receive(:page_op).with(:open)
           
           data = capture(:stdout){ subject.open("f1") }
