@@ -158,7 +158,7 @@ RSpec.describe Note do
       end
       FakeFS.clear!
     end
-    
+
     it "can be symlinked" do
       FakeFS do
         f1    = FileOp.new "f1"
@@ -189,8 +189,53 @@ RSpec.describe Note do
       end
       FakeFS.clear!
     end
+
+    it "can use exists? to confirm if it exists or not" do
+      FakeFS do
+        expect(FileOp.exists? "f1").to eq(false)
+        FileOp.new "f1"
+        expect(FileOp.exists? "f1").to eq(true)
+        
+        # and an alias
+        expect(FileOp.exist? "f2").to eq(false)
+        FileOp.new "f2"
+        expect(FileOp.exists? "f2").to eq(true)
+      end
+      FakeFS.clear!
+    end
+
+    it "can search all files of similar \"class\" for a string" do
+      FakeFS do
+        f1 = FileOp.new "f1"
+        f2 = FileOp.new "f2"
+        f1.write "stuff\nwhee\n"
+        f2.write "stuff\n"
+  
+        results = FileOp.search "stuff"
+        expect(results.length).to eq(2)
+        expect(results[0][:name]).to eq("f1")
+        expect(results[0][:search]).to eq("stuff\n")
+        expect(results[0][:line]).to eq(1)
+        expect(results[1][:name]).to eq("f2")
+        expect(results[1][:search]).to eq("stuff\n")
+        expect(results[1][:line]).to eq(1)
+
+        results = FileOp.search "whee"
+        expect(results.length).to eq(1)
+        expect(results[0][:name]).to eq("f1")
+        expect(results[0][:search]).to eq("whee\n")
+        expect(results[0][:line]).to eq(2)
+      end
+      FakeFS.clear!
+    end
+
+    it "can write a string to a file" do
+      f1 = FileOp.new "f1"
+      f1.write "stuff"
+      expect(f1.read).to eq("stuff")
+    end
   end
-    
+
   context "Note::page_op" do
     it "acts like a chef-provider, allows for easy cli command definition" do
       FakeFS do

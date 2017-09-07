@@ -8,61 +8,63 @@ module Note
     
     ############################################################################
     # static functionality
-
-    # returns the home directory of the class, can be overwritten for choosing
-    # a custom class home, but the default is to use the class name
-    def self.home(config: Config.new)
-      name = self.name.split(':').last.downcase
-      confPathName = "#{name}_path"
-      storPath = config.settings["store_path"]
-      setPath = config.settings[confPathName] || File.join(storPath)
-      
-      File.expand_path setPath
-    end
-
-    # returns the full path to the file by the name given, or the path to the
-    # home directory determined by the name of the class
-    def self.path_to(name="", config: Config.new)
-      File.expand_path File.join(self::home, name)
-    end
-
-    # assert the existence of the home directory for this module
-    def self.assert_home
-      FileUtils.mkdir_p self::path_to
-    end
-    
-    # check if a file exists for this class
-    def self.exists?(name)
-      File.exists? self::path_to(name)
-    end
-
-    # finds a file in this object scope with the matching name
-    def self.find(match="*")
-      self::find_path(match).map{|f| self.new File.basename(f)}
-    end
-
-    # returns full paths for each matching file name
-    def self.find_path(match="*")
-      Dir[(self::path_to match)]
-    end
-
-    def self.search(match="*")
-      found = []
-      self::find.each do |page|
-        # supposedly will be more memory efficient
-        # from The Tin man
-        # https://stackoverflow.com/questions/5761348/ruby-grep-with-line-number
-        open(page.path) do |f|
-          grep = f.each_line
-                  .with_index(1)
-                  .inject([]) { |m,i| m << i if (i[0][match]); m }
-
-          grep.each do |g|
-            found << {page: page, grep: g.first, line: g.last}
-          end if grep.length > 0
-        end
+    class << self
+      # returns the home directory of the class, can be overwritten for choosing
+      # a custom class home, but the default is to use the class name
+      def home(config: Config.new)
+        name = self.name.split(':').last.downcase
+        confPathName = "#{name}_path"
+        storPath = config.settings["store_path"]
+        setPath = config.settings[confPathName] || File.join(storPath)
+        
+        File.expand_path setPath
       end
-      return found || []
+
+      # returns the full path to the file by the name given, or the path to the
+      # home directory determined by the name of the class
+      def path_to(name="", config: Config.new)
+        File.expand_path File.join(self::home, name)
+      end
+
+      # assert the existence of the home directory for this module
+      def assert_home
+        FileUtils.mkdir_p self::path_to
+      end
+      
+      # check if a file exists for this class
+      def exists?(name)
+        File.exists? self::path_to(name)
+      end
+      alias_method :exist?, :exists?
+
+      # finds a file in this object scope with the matching name
+      def find(match="*")
+        self::find_path(match).map{|f| self.new File.basename(f)}
+      end
+
+      # returns full paths for each matching file name
+      def find_path(match="*")
+        Dir[(self::path_to match)]
+      end
+
+      def search(match="*")
+        found = []
+        self::find.each do |f|
+          # supposedly will be more memory efficient
+          # from The Tin man
+          # https://stackoverflow.com/questions/5761348/ruby-grep-with-line-number
+          open(f.path) do |r|
+            grep = r.each_line
+                    .with_index(1)
+                    .inject([]) { |m,i| m << i if (i[0][match]); m }
+
+            grep.each do |g|
+              found << {name: f.name, search: g.first, line: g.last}
+            end if grep.length > 0
+          end
+        end
+        return found || []
+      end
     end
 
     ############################################################################ 
