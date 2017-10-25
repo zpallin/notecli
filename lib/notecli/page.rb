@@ -16,12 +16,10 @@ module Note
     # opens a file with the editor and file type provided
     # a file is symlinked to a tmp directory and opened with 
     # a different file extension
-    def open(editor: nil, ext: nil)
+    def open(editor: nil, ext: nil, config: Config.create)
 
-      editor ||= @settings["editor"]
-      ext ||= @settings["ext"]
-
-      self.class.assert_home
+      editor ||= config.settings["editor"]
+      ext ||= config.settings["ext"]
       temp = self.temp ext
       
       system(editor.to_s, temp.to_s)
@@ -46,7 +44,6 @@ module Note
       ext ||= config.settings["ext"]
       history = History.new
 
-      self::assert_home
       temps = pages.map{|page| page.temp ext}
       if temps.length > 0
         conns = "#{editor} #{temps.join(' ')}"
@@ -83,10 +80,10 @@ module Note
 
     ############################################################################ 
     # creates a symlink in a temp directory
-    def temp(ext=nil, temp_path=nil)
+    def temp(ext=nil, temp_path=nil, config: Config.new)
 
-      temp_path ||= @settings["temp_path"]
-      ext ||= @settings["ext"]
+      temp_path ||= config.settings["temp_path"]
+      ext ||= config.settings["ext"]
      
       to_path = File.join(
         temp_path, 
@@ -98,7 +95,7 @@ module Note
     end
 
     # removes a temp file after it is created
-    def rm_temp(file_ext, temp_path: @settings["temp_path"])
+    def rm_temp(file_ext, temp_path: Config.new.settings["temp_path"])
       path = File.join(temp_path, [@name, file_ext].join("."))
       if File.file? path
         FileUtils.rm path
@@ -171,5 +168,4 @@ module Note
     end
     @pages
   end
-
 end
