@@ -21,7 +21,7 @@ RSpec.describe Notecli do
       it "can open a file" do
         FakeFS do
           allow(Page).to receive_messages(:open => "hello")
-          f1 = Page.new "f1"
+          f1 = Page.create "f1"
           conf = Config.new
           
           # because Page is being called as a static method
@@ -35,7 +35,7 @@ RSpec.describe Notecli do
           conf = Config.new
           conf.set "editor", "nano"
           conf.set "ext", "md"
-          f1 = Page.new "f1"
+          f1 = Page.create "f1"
           expect(f1).to receive(:system).with(
             "nano", 
             File.expand_path(File.join("~",".notecli","temp","f1.md")))
@@ -44,8 +44,8 @@ RSpec.describe Notecli do
       end
       it "can open files matching a basic string match" do
         FakeFS do
-          f1 = Page.new "f1"
-          f2 = Page.new "f2"
+          f1 = Page.create "f1"
+          f2 = Page.create "f2"
         end
       end
     end
@@ -73,9 +73,9 @@ RSpec.describe Notecli do
         FakeFS do
           test1 = Group.new "test1"
           test2 = Group.new "test2"
-          f1 = Page.new "f1"
-          f2 = Page.new "f2"
-          f3 = Page.new "f3"
+          f1 = Page.create "f1"
+          f2 = Page.create "f2"
+          f3 = Page.create "f3"
           
           test1.add f1
           test2.add f2

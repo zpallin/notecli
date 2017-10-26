@@ -3,15 +3,113 @@ require "spec_helper"
 require "pp"
 require "fakefs"
 
+Book		= Note::Book
 Page    = Note::Page
 Group   = Note::Group
 Config  = Note::Config
 FileOp  = Note::FileOp
 History = Note::History
 
+
 RSpec.describe Note do
   include FakeFS::SpecHelpers
   include Note
+
+	describe Book do
+		it "can be created" do
+			FakeFS do
+				config = Config.new
+				b1 = Book.create "b1"
+				expect(b1.path).to eq(File.join(config.namespace_path(b1.name)))
+				expect(b1.name).to eq("b1")
+			end
+			FakeFS.clear!
+		end
+
+		it "can list all files in its directory" do
+			FakeFS do
+				config = Config.create
+				b1 = Book.create "b1"
+				p1 = Page.create "b1/p1"
+				expect(b1.list_files).to eq([File.join(config.store_path,"b1","p1")])
+				p2 = Page.create "b1/p2"
+				expect(b1.list_files).to eq([
+					File.join(config.store_path,"b1","p1"),
+					File.join(config.store_path,"b1","p2")
+				])
+			end
+			FakeFS.clear!
+		end
+	
+		it "can list its contents as names" do
+			FakeFS do
+				b1 = Book.create "b1"
+				p1 = Page.create "b1/p1"
+				p2 = Page.create "b1/p2"
+				expect(b1.list_names).to eq(["p1", "p2"])
+			end
+			FakeFS.clear!
+		end
+	
+		it "can list its contents as pages" do
+			FakeFS do
+				config = Config.new
+				b1 = Book.create "b1"
+				p1 = Page.create "b1/p1"
+				p2 = Page.create "b1/p2"
+				expect(b1.list_pages.map{|x|x.name}).to eq(["p1", "p2"])
+			end
+			FakeFS.clear!
+		end
+
+    it "can search all pages for content" do
+      FakeFS do
+				b1 = Book.create "b1"
+        f1 = Page.create "b1/f1"
+        f2 = Page.create "b1/f2"
+        f1.write "stuff\nwhee\n"
+        f2.write "stuff\n"
+  
+        results = b1.search "stuff"
+        expect(results.length).to eq(2)
+        expect(results[0][:name]).to eq("f1")
+        expect(results[0][:search]).to eq("stuff\n")
+        expect(results[0][:line]).to eq(1)
+        expect(results[1][:name]).to eq("f2")
+        expect(results[1][:search]).to eq("stuff\n")
+        expect(results[1][:line]).to eq(1)
+
+        results = b1.search "whee"
+        expect(results.length).to eq(1)
+        expect(results[0][:name]).to eq("f1")
+        expect(results[0][:search]).to eq("whee\n")
+        expect(results[0][:line]).to eq(2)
+      end
+      FakeFS.clear!
+    end
+
+		it "can be deleted" do
+			FakeFS do
+				b1 = Book.create "b1"
+				p1 = Page.create "b1/p1"
+				expect(b1.list_pages.length).to eq(1)
+				b1.delete
+				expect(Book.exists? "b1").to eq(false)
+			end
+			FakeFS.clear!
+		end
+
+		it "can match a path" do
+			FakeFS do
+				b1 = Book.create "b1"
+				p1 = Page.create "b1/p1"
+				p1 = Page.create "b1/p2"
+				contents = Dir["#{b1.path}/p*"].map{|x|x.rpartition("/").last}
+				expect(b1.list_names "p*").to eq(contents)
+			end
+			FakeFS.clear!
+		end
+	end
 
   describe Group do
     it "can be created" do
@@ -27,9 +125,9 @@ RSpec.describe Note do
     it "can add a page to its group" do
       FakeFS do
         group = Group.new "testgroup"
-        f1    = Page.new "f1"
-        f2    = Page.new "f2"
-        f3    = Page.new "f3"
+        f1    = Page.create "f1"
+        f2    = Page.create "f2"
+        f3    = Page.create "f3"
         expect(group.add([f1, f2])).to eq(true)
         expect(group.add(f3)).to eq(true)
       end
@@ -39,8 +137,8 @@ RSpec.describe Note do
     it "can return the members of its group as page objects" do
       FakeFS do
         group = Group.new "testgroup"
-        f1    = Page.new "f1"
-        f2    = Page.new "f2"
+        f1    = Page.create "f1"
+        f2    = Page.create "f2"
 
         group.add([f1, f2])
         members = group.members
@@ -66,17 +164,17 @@ RSpec.describe Note do
   describe Page do
     it "can be opened in a temp file with custom extensions" do
       FakeFS do
-       f1 = Page::new "f1"
+       f1 = Page.create "f1"
         expect(f1).to receive(:system).with(
           "vi", File.expand_path("~/.notecli/temp/f1.txt"))
         f1.open
 
-        f2 = Page::new "f2"
+        f2 = Page.create "f2"
         expect(f2).to receive(:system).with(
           "vi", File.expand_path("~/.notecli/temp/f2.csv"))
         f2.open(ext: "csv")
 
-        f3 = Page::new "f3"
+        f3 = Page.create "f3"
         expect(f3).to receive(:system).with(
           "nano", File.expand_path("~/.notecli/temp/f3.markdown"))
         f3.open(editor: "nano", ext: "markdown")
@@ -86,12 +184,12 @@ RSpec.describe Note do
 
     it "can open multiple files at once" do
       FakeFS do
-        f1 = Page.new "f1"
-        f2 = Page.new "f2"
+        f1 = Page.create "f1"
+        f2 = Page.create "f2"
        
         # open_multiple will system call to the temp paths 
         expect(Page).to receive(:system).with("vi #{f1.temp} #{f2.temp}")
-        Page::open_multiple([f1, f2]) 
+        Page::open_multiple([f1, f2])
       end
       FakeFS.clear!
     end
@@ -111,8 +209,8 @@ RSpec.describe Note do
           pages = Page::process_pages ["f1", "f2"], match: true
           expect(pages).to eq([])
 
-          Page.new "f1"
-          Page.new "f2"
+          Page.create "f1"
+          Page.create "f2"
 
           pages = Page::process_pages ["f1", "f2"], match: true
           expect(pages.map{|p| p.name}).to eq(["f1", "f2"])
@@ -133,48 +231,73 @@ RSpec.describe Note do
       end
       FakeFS.clear!
     end
+
+		it "must be explicitly created or its directories will not appear" do
+			FakeFS do
+				config = Config.new
+				expect(Dir.exists? config.store_path).to eq(false)
+			
+				config = Config.create
+				expect(Dir.exists? config.store_path).to eq(true)
+			end
+			FakeFS.clear!
+		end
+
+		it "can return the store_path with or without added path" do
+			FakeFS do
+				config = Config.new
+				default_path = File.expand_path("~/.notecli")
+				expect(config.store_path).to eq(default_path)
+				
+				new_path = File.join(default_path, "b1")
+				expect(config.store_path "b1").to eq(new_path)
+			end
+      FakeFS.clear!
+		end
+
+		it "can set a namespace for reading pages" do
+			# this will check if the config has changed to use a particular
+			# namespace. The default is empty "".
+			FakeFS do
+				config = Config.new
+				expect(config.namespace).to eq("")
+				config.set_namespace("b1")
+				expect(config.namespace).to eq("b1")
+			end
+      FakeFS.clear!
+		end
   end
 
   describe FileOp do
     it "can be created" do
       FakeFS do
-        f1 = FileOp.new "f1"
+				config = Config.new
+        f1 = FileOp.create "f1"
         expect(f1.name).to eq("f1")
-        expect(f1.path).to eq(FileOp::path_to "f1")
+        expect(f1.path).to eq(config.store_path("f1"))
         expect(File.file? f1.path).to eq(true)
-      end
-      FakeFS.clear!
-    end
-
-    it "can find files within its pages dir" do
-      FakeFS do
-        f1 = FileOp.new "f1"
-        f2 = FileOp.new "f2"
-        f3 = FileOp.new "f3"
-        expect(FileOp::find_path("*")).to eq([f1.path, f2.path, f3.path])
-        expect(FileOp::find_path("*1")).to eq([f1.path])
-        expect(FileOp::find("*").map{|f|f.name}).to eq([f1.name, f2.name, f3.name])
-        expect(FileOp::find("something").map{|f|f.name}).to eq([])
       end
       FakeFS.clear!
     end
 
     it "can be symlinked" do
       FakeFS do
-        f1    = FileOp.new "f1"
-        path  = FileOp::path_to "f2"
-        f1.symlink(path)
-        expect(File.file? path).to eq(true)
+        f1 = FileOp.create "f1"
+				f2 = FileOp.new "f2"
+        f1.symlink(f2.path)
+        expect(File.file? f2.path).to eq(true)
       end
       FakeFS.clear!
     end
 
     it "can be renamed" do
       FakeFS do
-        f1 = FileOp::new "f1"
+        f1 = FileOp.create "f1"
+				f2 = FileOp.new "f2" # not created
         expect(f1.rename "f2").to eq(true)
         expect(f1.name).to eq("f2")
-        expect(File.file? FileOp::path_to("f2")).to eq(true)
+        expect(FileOp.exists? "f1").to eq(false)
+        expect(FileOp.exists? "f2").to eq(true)
       end
       FakeFS.clear!
     end
@@ -193,44 +316,22 @@ RSpec.describe Note do
     it "can use exists? to confirm if it exists or not" do
       FakeFS do
         expect(FileOp.exists? "f1").to eq(false)
-        FileOp.new "f1"
+        FileOp.create "f1"
         expect(FileOp.exists? "f1").to eq(true)
         
         # and an alias
         expect(FileOp.exist? "f2").to eq(false)
-        FileOp.new "f2"
+        FileOp.create "f2"
         expect(FileOp.exists? "f2").to eq(true)
       end
       FakeFS.clear!
     end
 
-    it "can search all files of similar \"class\" for a string" do
-      FakeFS do
-        f1 = FileOp.new "f1"
-        f2 = FileOp.new "f2"
-        f1.write "stuff\nwhee\n"
-        f2.write "stuff\n"
-  
-        results = FileOp.search "stuff"
-        expect(results.length).to eq(2)
-        expect(results[0][:name]).to eq("f1")
-        expect(results[0][:search]).to eq("stuff\n")
-        expect(results[0][:line]).to eq(1)
-        expect(results[1][:name]).to eq("f2")
-        expect(results[1][:search]).to eq("stuff\n")
-        expect(results[1][:line]).to eq(1)
 
-        results = FileOp.search "whee"
-        expect(results.length).to eq(1)
-        expect(results[0][:name]).to eq("f1")
-        expect(results[0][:search]).to eq("whee\n")
-        expect(results[0][:line]).to eq(2)
-      end
-      FakeFS.clear!
-    end
 
     it "can write a string to a file" do
-      f1 = FileOp.new "f1"
+      f1 = FileOp.create "f1"
+			config = Config.create
       f1.write "stuff"
       expect(f1.read).to eq("stuff")
     end
@@ -266,8 +367,7 @@ RSpec.describe Note do
           end
         }.to output("no matches ([])\nnone\n").to_stdout
 
-        Page.new "f1"
-
+        Page.create "f1"
         expect{
           page_op :test do
             match true
@@ -279,7 +379,7 @@ RSpec.describe Note do
           end
         }.to output("test: \"f1\"\none\n").to_stdout
 
-        Page.new "f2"
+        Page.create "f2"
         expect{
           page_op :test do
             match true
@@ -297,8 +397,8 @@ RSpec.describe Note do
   describe History do
     it "adds a page to the history" do
       FakeFS do
-        f1 = Page.new "f1"
-        f2 = Page.new "f2"
+        f1 = Page.create "f1"
+        f2 = Page.create "f2"
         history = History.new
         history.add f1
         history.add f2
@@ -320,7 +420,7 @@ RSpec.describe Note do
     it "can add a page to its history, taking its name or string as an argument" do
       FakeFS do
         history = History.new
-        f1 = Page.new "f1"
+        f1 = Page.create "f1"
         expect(f1).to receive(:system)
         expect_any_instance_of(History).to receive(:add).with(f1.name)
         f1.open
@@ -339,14 +439,14 @@ RSpec.describe Note do
         expect(config.settings["history_size"]).to eq(10)
       
         for i in 1...config.settings["history_size"]+1 do
-          page = Page.new "f#{i}"
+          page = Page.create "f#{i}"
           expect(page).to receive(:system)
           page.open
         end
 
         expect(history.list).to eq(["f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10"])
 
-        f11 = Page.new "f11"
+        f11 = Page.create "f11"
         expect(f11).to receive(:system)
         f11.open
 

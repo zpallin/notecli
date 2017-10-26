@@ -6,6 +6,38 @@ require 'notecli/page'
 require "highline/import"
 
 module Notecli
+
+	##############################################################################
+	# books are used to categorize pages
+	class Book < Thor
+	include Note
+#		desc "list MATCH [MATCH...]", "lists all book names that match"
+#		def list(*books)
+#				
+#		end
+
+		desc "show NAME", "show all pages of a book"
+    option :'fullpath',
+           :type => :boolean,
+           :aliases => [:'-u']
+		def show(name)
+			if Note::Book.exists? name
+				book = Note::Book.new name
+				if options[:fullpath]
+					book.list_files.each do |path|
+						puts path
+					end
+				else
+					book.list_names.each do |name|
+						puts name
+					end
+				end
+			else
+				puts "Book \"#{name}\" does not exist"
+			end
+		end
+	end
+
   ############################################################################## 
 	# used to link pages and groups together
 	class Link < Thor
@@ -16,7 +48,7 @@ module Notecli
 			pageName = options[:"to-page"]
 			if pageName
 				puts "linking #{pageName} to:"
-				page = Page.new pageName
+				page = Page.create pageName
 				args.each do |groupName|
           puts " - #{groupName}"
 					group = Group.new groupName
@@ -37,7 +69,7 @@ module Notecli
         group = Group.new groupName
 		    args.each do |pageName|
           puts " - #{pageName}"
-          page = Page.new pageName
+          page = Page.create pageName
           group.add page
         end    
 			else
@@ -338,15 +370,37 @@ module Notecli
           next
         end
 
-        page = Page.new pagename
+        page = Page.create pagename
         data = File.open(file).read
         page.append(data)
       end
     end
+
+		desc "books MATCH", "lists all books in a namespace"
+		def books(match="*")
+			matchParsed = match.rpartition('/')
+			bookName = matchParsed.length > 1 ? matchParsed.first : ""
+
+			if not Note::Book.exists? bookName
+				puts "Book \"#{bookName}\" does not exist"
+			else
+				parentBook = Note::Book.new bookName
+				matchString = File.expand_path(File.join(parentBook.path, matchParsed.last))
+				Dir[matchString].select{|f|
+					fn = f.rpartition('/').last
+					File.directory? f and !(fn =='.' || fn == '..')
+				}.each do |book|
+					puts book.rpartition('/').last
+				end
+			end
+		end
         
 		desc "link SUBCOMMAND [OPTIONS]", "used to link groups and pages"
 		subcommand :link, Link
 		map "l" => :link
+
+		desc "book SUBCOMMAND [OPTIONS]", "book management commands"
+		subcommand :book, Book
+		map "b" => :book
   end
 end
-

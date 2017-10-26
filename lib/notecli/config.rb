@@ -12,25 +12,40 @@ module Note
   class Config
 		attr_accessor :settings
 
+		class << self
+			def default
+				{
+					"last_updated" => DateTime.now.strftime("%d/%m/%Y %H:%M"),
+					"store_path" => File.expand_path("~/.notecli"),
+					"group_path" => File.expand_path("~/.notecli/groups"),
+					"page_path" => File.expand_path("~/.notecli/pages"),
+					"temp_path" => File.expand_path("~/.notecli/temp"),
+					"namespace" => "",	# for identifying current namespace path
+					"history_path" => File.expand_path("~/.notecli"),
+					"editor" => "vi",
+					"ext" => "txt",
+					"history_size" => 100
+				}
+			end
+
+			def create
+				c = self.new
+				c.assert
+				c	
+			end
+		end
+
+		def assert
+			@settings.select{|k,_|k["_path"]}.each do |k,v|
+				FileUtils.mkdir_p v
+			end
+		end
+
     def initialize
       user_home = File.expand_path("~")
       @settings = Config::default
       @path = "#{user_home}/.notecli/config.yml"
       self.load
-    end
-
-    def self.default
-      {
-        "last_updated" => DateTime.now.strftime("%d/%m/%Y %H:%M"),
-        "store_path" => File.expand_path("~/.notecli"),
-				"group_path" => File.expand_path("~/.notecli/groups"),
-				"page_path" => File.expand_path("~/.notecli/pages"),
-				"temp_path" => File.expand_path("~/.notecli/temp"),
-        "history_path" => File.expand_path("~/.notecli"),
-				"editor" => "vi",
-				"ext" => "txt",
-        "history_size" => 100
-      }
     end
 
     def last_updated
@@ -46,6 +61,27 @@ module Note
       end
       self.last_updated if key != "last_updated"
     end
+
+		# for getting the absolute store path
+		# typically it is more correct to use "namespace" or "namespace_path"
+		def store_path(path="/")
+			File.expand_path(File.join(self.settings["store_path"], path))
+		end
+
+		# ergonomically change the namespace
+		def set_namespace(ns="")
+			self.settings["namespace"] = ns
+		end
+
+		# for ergonomics
+		def namespace
+			self.settings["namespace"]
+		end
+
+		# for ergonomically recalling the current fullpath of the namespace
+		def namespace_path(path="")
+			File.expand_path(File.join(self.store_path, self.namespace, path))
+		end
 
     # loads configuration file which should be in the local profile or
     # etc. Examples include /etc/noterc and ~/.noterc

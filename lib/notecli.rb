@@ -6,4 +6,4 @@ require 'notecli/cli'
 require 'notecli/config'
 require 'notecli/group'
 require 'notecli/page'
-
+require 'notecli/book'

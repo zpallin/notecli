@@ -4,82 +4,34 @@ module Note
   # FileOp class provides common functionality for all of the objects that touch 
   # files
   class FileOp
-    attr_reader :name, :path
+    attr_reader :name, :path, :book
     
     ############################################################################
     # static functionality
     class << self
-      # returns the home directory of the class, can be overwritten for choosing
-      # a custom class home, but the default is to use the class name
-      def home(config: Config.new)
-        name = self.name.split(':').last.downcase
-        confPathName = "#{name}_path"
-        storPath = config.settings["store_path"]
-        setPath = config.settings[confPathName] || File.join(storPath)
-        
-        File.expand_path setPath
-      end
 
-      # returns the full path to the file by the name given, or the path to the
-      # home directory determined by the name of the class
-      def path_to(name="", config: Config.new)
-        File.expand_path File.join(self::home, name)
-      end
-
-      # assert the existence of the home directory for this module
-      def assert_home
-        FileUtils.mkdir_p self::path_to
-      end
-      
       # check if a file exists for this class
-      def exists?(name)
-        File.exists? self::path_to(name)
+      def exists?(path)
+				f = FileOp.new(path)
+        File.exists? f.path
       end
       alias_method :exist?, :exists?
 
-      # finds a file in this object scope with the matching name
-      def find(match="*")
-        self::find_path(match).map{|f| self.new File.basename(f)}
-      end
-
-      # returns full paths for each matching file name
-      def find_path(match="*")
-        Dir[(self::path_to match)]
-      end
-
-      def search(match="*")
-        found = []
-        self::find.each do |f|
-          # supposedly will be more memory efficient
-          # from The Tin man
-          # https://stackoverflow.com/questions/5761348/ruby-grep-with-line-number
-          open(f.path) do |r|
-            grep = r.each_line
-                    .with_index(1)
-                    .inject([]) { |m,i| m << i if (i[0][match]); m }
-
-            grep.each do |g|
-              found << {name: f.name, search: g.first, line: g.last}
-            end if grep.length > 0
-          end
-        end
-        return found || []
-      end
+			# used so that "new" doesn't automatically touch a file
+			def create(path)
+				f = self.new path
+				f.touch
+				f
+			end
     end
 
     ############################################################################ 
     # methods
 
     # by default, it saves the config 
-    def initialize(name, config: Config.new)
-      self.update_settings(config: config)
-      self.class.assert_home
-      self.create name
-    end
-
-    # update with notecli global settings
-    def update_settings(config: Config.new)
-      @settings = config.settings
+    def initialize(path)
+			Config.create
+      self.compose path
     end
 
     # creates a symlink to another path for the original path of
@@ -90,10 +42,12 @@ module Note
     end
 
     # runs all of the creation steps for the page dir
-    def create(name)
-      @name = name
-      @path = self.class.path_to name
-      self.touch
+    def compose(local_path=nil, config: Config.new)
+			@local_path = local_path if local_path
+			@path = File.join(config.namespace_path, local_path)
+			parsed = @local_path.rpartition('/')
+      @name = parsed.last
+			@book = Book.create (parsed.length > 1 ? parsed.first : "")
     end
 
     def touch
@@ -103,8 +57,9 @@ module Note
     # renames a file to a new name and checks if a file
     # exists first
     def rename(name)
-      FileUtils.mv @path, self.class.path_to(name)
-      self.create name
+			newpath = @book.path_to(name)
+      FileUtils.mv @path, newpath
+      self.compose newpath
       return true
     end
 
@@ -116,7 +71,6 @@ module Note
     # write file
     def write(data)
       data = data.join("\n") if data.kind_of?(Array)
-
       file = File.open(self.path, "w")
       file.write(data)
     end
