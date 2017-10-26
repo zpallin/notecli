@@ -1,8 +1,11 @@
 # coding: utf-8
+lib = File.expand_path("../lib", __FILE__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+require "notecli/version"
 
 Gem::Specification.new do |spec|
   spec.name          = "notecli"
-  spec.version       = "0.1.0"
+  spec.version       = Notecli::VERSION
   spec.authors       = ["zpallin"]
   spec.email         = ["zpallin@gmail.com"]
 
