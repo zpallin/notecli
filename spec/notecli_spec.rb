@@ -12,16 +12,16 @@ Link = Notecli::Link
 CLI = Notecli::CLI
 
 RSpec.describe Notecli do
-  xit "has a version number" do
+  it "has a version number" do
     expect(Notecli::VERSION).not_to be nil
   end
 
   describe CLI do
     context "open" do
-      xit "can open a file" do
+      it "can open a file" do
         FakeFS do
           allow(Page).to receive_messages(:open => "hello")
-          f1 = Page.new "f1"
+          f1 = Page.create "f1"
           conf = Config.new
           
           # because Page is being called as a static method
@@ -30,28 +30,28 @@ RSpec.describe Notecli do
           data = capture(:stdout){ subject.open("f1") }
         end
       end
-      xit "can open with a different editor or file extension" do
+      it "can open with a different editor or file extension" do
         FakeFS do
           conf = Config.new
           conf.set "editor", "nano"
           conf.set "ext", "md"
-          f1 = Page.new "f1"
+          f1 = Page.create "f1"
           expect(f1).to receive(:system).with(
             "nano", 
             File.expand_path(File.join("~",".notecli","temp","f1.md")))
           f1.open
         end
       end
-      xit "can open files matching a basic string match" do
+      it "can open files matching a basic string match" do
         FakeFS do
-          f1 = Page.new "f1"
-          f2 = Page.new "f2"
+          f1 = Page.create "f1"
+          f2 = Page.create "f2"
         end
       end
     end
 
     context "groups" do
-      xit "can list all of the current groups" do
+      it "can list all of the current groups" do
         FakeFS do
           Group.new "test1"
           Group.new "test2"
@@ -60,7 +60,7 @@ RSpec.describe Notecli do
             "list all groupings with match \".*\"\n---\n- test1\n- test2\n")
         end
       end
-      xit "can match groupings and list them" do
+      it "can match groupings and list them" do
         FakeFS do 
           Group.new "test1"
           Group.new "test2"
@@ -69,13 +69,13 @@ RSpec.describe Notecli do
             "list all groupings with match \"test*\"\n---\n- test1\n- test2\n")
         end
       end
-      xit "can also list contents of each group with a flag" do
+      it "can also list contents of each group with a flag" do
         FakeFS do
           test1 = Group.new "test1"
           test2 = Group.new "test2"
-          f1 = Page.new "f1"
-          f2 = Page.new "f2"
-          f3 = Page.new "f3"
+          f1 = Page.create "f1"
+          f2 = Page.create "f2"
+          f3 = Page.create "f3"
           
           test1.add f1
           test2.add f2

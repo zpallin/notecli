@@ -58,7 +58,7 @@ module Note
     end
 
     def members
-      entries = Dir.entries(@path).select { |f| File.file?(Page::path_to f) }
+      entries = Dir.entries(@path).select { |f| File.file?(Page.new(f).path) }
       return entries.map{|name| Page.new name}
     end
 

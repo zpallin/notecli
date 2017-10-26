@@ -112,7 +112,7 @@ RSpec.describe Note do
 	end
 
   describe Group do
-    xit "can be created" do
+    it "can be created" do
       FakeFS do
         group = Group.new "testgroup"
         expect(group.name).to eq("testgroup")
@@ -122,23 +122,23 @@ RSpec.describe Note do
       FakeFS.clear!
     end
 
-    xit "can add a page to its group" do
+    it "can add a page to its group" do
       FakeFS do
         group = Group.new "testgroup"
-        f1    = Page.new "f1"
-        f2    = Page.new "f2"
-        f3    = Page.new "f3"
+        f1    = Page.create "f1"
+        f2    = Page.create "f2"
+        f3    = Page.create "f3"
         expect(group.add([f1, f2])).to eq(true)
         expect(group.add(f3)).to eq(true)
       end
       FakeFS.clear!
     end
 
-    xit "can return the members of its group as page objects" do
+    it "can return the members of its group as page objects" do
       FakeFS do
         group = Group.new "testgroup"
-        f1    = Page.new "f1"
-        f2    = Page.new "f2"
+        f1    = Page.create "f1"
+        f2    = Page.create "f2"
 
         group.add([f1, f2])
         members = group.members
@@ -150,7 +150,7 @@ RSpec.describe Note do
       FakeFS.clear!
     end
 
-    xit "can rename the group" do
+    it "can rename the group" do
       FakeFS do
         group = Group.new "testgroup"
         expect(group.rename "newname").to eq(true)
@@ -164,17 +164,17 @@ RSpec.describe Note do
   describe Page do
     it "can be opened in a temp file with custom extensions" do
       FakeFS do
-       f1 = Page::new "f1"
+       f1 = Page.create "f1"
         expect(f1).to receive(:system).with(
           "vi", File.expand_path("~/.notecli/temp/f1.txt"))
         f1.open
 
-        f2 = Page::new "f2"
+        f2 = Page.create "f2"
         expect(f2).to receive(:system).with(
           "vi", File.expand_path("~/.notecli/temp/f2.csv"))
         f2.open(ext: "csv")
 
-        f3 = Page::new "f3"
+        f3 = Page.create "f3"
         expect(f3).to receive(:system).with(
           "nano", File.expand_path("~/.notecli/temp/f3.markdown"))
         f3.open(editor: "nano", ext: "markdown")
@@ -184,12 +184,12 @@ RSpec.describe Note do
 
     it "can open multiple files at once" do
       FakeFS do
-        f1 = Page.new "f1"
-        f2 = Page.new "f2"
+        f1 = Page.create "f1"
+        f2 = Page.create "f2"
        
         # open_multiple will system call to the temp paths 
         expect(Page).to receive(:system).with("vi #{f1.temp} #{f2.temp}")
-        Page::open_multiple([f1, f2]) 
+        Page::open_multiple([f1, f2])
       end
       FakeFS.clear!
     end
@@ -209,8 +209,8 @@ RSpec.describe Note do
           pages = Page::process_pages ["f1", "f2"], match: true
           expect(pages).to eq([])
 
-          Page.new "f1"
-          Page.new "f2"
+          Page.create "f1"
+          Page.create "f2"
 
           pages = Page::process_pages ["f1", "f2"], match: true
           expect(pages.map{|p| p.name}).to eq(["f1", "f2"])
@@ -367,8 +367,7 @@ RSpec.describe Note do
           end
         }.to output("no matches ([])\nnone\n").to_stdout
 
-        Page.new "f1"
-
+        Page.create "f1"
         expect{
           page_op :test do
             match true
@@ -380,7 +379,7 @@ RSpec.describe Note do
           end
         }.to output("test: \"f1\"\none\n").to_stdout
 
-        Page.new "f2"
+        Page.create "f2"
         expect{
           page_op :test do
             match true
@@ -396,10 +395,10 @@ RSpec.describe Note do
   end
 
   describe History do
-    xit "adds a page to the history" do
+    it "adds a page to the history" do
       FakeFS do
-        f1 = Page.new "f1"
-        f2 = Page.new "f2"
+        f1 = Page.create "f1"
+        f2 = Page.create "f2"
         history = History.new
         history.add f1
         history.add f2
@@ -409,7 +408,7 @@ RSpec.describe Note do
       FakeFS.clear!
     end
     
-    xit "will try to create the ~/.notecli/history file if it does not exist" do
+    it "will try to create the ~/.notecli/history file if it does not exist" do
       FakeFS do
         expect(File.exists? "~/.notecli/history").to eq(false)
         history = History.new
@@ -418,10 +417,10 @@ RSpec.describe Note do
       FakeFS.clear!
     end
 
-    xit "can add a page to its history, taking its name or string as an argument" do
+    it "can add a page to its history, taking its name or string as an argument" do
       FakeFS do
         history = History.new
-        f1 = Page.new "f1"
+        f1 = Page.create "f1"
         expect(f1).to receive(:system)
         expect_any_instance_of(History).to receive(:add).with(f1.name)
         f1.open
@@ -429,7 +428,7 @@ RSpec.describe Note do
       FakeFS.clear!
     end
 
-    xit "controls line numbers via config" do
+    it "controls line numbers via config" do
       FakeFS do
         history = History.new
         expect(File.exist? history.path).to eq(true)
@@ -440,14 +439,14 @@ RSpec.describe Note do
         expect(config.settings["history_size"]).to eq(10)
       
         for i in 1...config.settings["history_size"]+1 do
-          page = Page.new "f#{i}"
+          page = Page.create "f#{i}"
           expect(page).to receive(:system)
           page.open
         end
 
         expect(history.list).to eq(["f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10"])
 
-        f11 = Page.new "f11"
+        f11 = Page.create "f11"
         expect(f11).to receive(:system)
         f11.open
 

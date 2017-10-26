@@ -67,7 +67,8 @@ module Note
     def self.process_pages(args, match: false)
       if match
         return args.map{|f|
-          self.find(f)
+					page = Page.new f
+          page.book.list_pages(f)
         }.flatten.map{|f|
           f.name
         }.uniq.map{|f|

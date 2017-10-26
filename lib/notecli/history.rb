@@ -10,11 +10,11 @@ module Note
 
   class History < FileOp
 
-    def initialize(config: Config.new)
-      @settings = config.settings
-      self.class.assert_home
-      self.create "history"
-    end
+		def initialize
+			Config.create
+			self.compose "history"
+			self.touch
+		end
 
     def add(pageinput, config: Config.new)
       if pageinput.class == Page
@@ -45,3 +45,4 @@ module Note
     end
   end
 end
+
