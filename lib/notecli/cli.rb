@@ -398,7 +398,29 @@ module Notecli
 				end
 			end
 		end
-  
+ 
+    desc "rename OLDPATH NEWPATH", "rename a page"
+    option :force,
+           :type => :boolean,
+           :default => false,
+           :aliases => [:'f']
+    def rename(oldname, newname)
+      if Page.exists? oldname
+        overwrite = nil
+
+        if not options[:force] and Page.exists? newname
+          puts "Page \"#{newname}\" exists already.\rOverwrite? (y/n)"
+          overwrite = gets.chomp.downcase
+        end
+
+        if overwrite == "y" or options[:force] or not Page.exists? newname
+          Page.new(oldname).rename newname
+          puts "\"#{oldname}\" renamed to \"#{newname}\""
+        end
+      else
+        puts "Page \"#{oldname}\" does not exist"
+      end
+    end
     ############################################################################ 
     # version
     desc "version", "displays current version"
