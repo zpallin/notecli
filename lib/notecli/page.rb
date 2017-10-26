@@ -72,10 +72,10 @@ module Note
         }.flatten.map{|f|
           f.name
         }.uniq.map{|f|
-          self.new f
+          Page.create f
         }
       else
-        return args.map{|f| self.new(f)}.flatten
+        return args.map{|f| Page.create(f)}.flatten
       end
     end
 

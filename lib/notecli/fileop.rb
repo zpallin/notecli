@@ -47,7 +47,7 @@ module Note
 			@path = File.join(config.namespace_path, local_path)
 			parsed = @local_path.rpartition('/')
       @name = parsed.last
-			@book = Book.new (parsed.length > 1 ? parsed.first : "")
+			@book = Book.create (parsed.length > 1 ? parsed.first : "")
     end
 
     def touch
