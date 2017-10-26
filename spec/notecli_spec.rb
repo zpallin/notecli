@@ -88,6 +88,37 @@ RSpec.describe Notecli do
         end
       end
     end
+    context "rename" do
+      it "can rename a page" do
+        FakeFS do
+          p1 = Page.create "p1"
+          p2 = Page.new "p2"
+          expect(Page.exists? "p1").to eq(true)
+          expect(Page.exists? "p2").to eq(false)
+
+          subject.options = {}
+          data = capture(:stdout) {subject.rename "p1", "p2"}
+          expect(data).to eq("\"p1\" renamed to \"p2\"\n")
+          expect(Page.exists? "p1").to eq(false)
+          expect(Page.exists? "p2").to eq(true)
+        end
+      end
+
+      it "can force rename a page" do
+        FakeFS do
+          p1 = Page.create "p1"
+          p2 = Page.create "p2"
+          expect(Page.exists? "p1").to eq(true)
+          expect(Page.exists? "p2").to eq(true)
+
+          subject.options = {:force => true}
+          data = capture(:stdout) {subject.rename "p1", "p2"}
+          expect(data).to eq("\"p1\" renamed to \"p2\"\n")
+          expect(Page.exists? "p1").to eq(false)
+          expect(Page.exists? "p2").to eq(true)
+        end
+      end
+    end
   end
 end
 

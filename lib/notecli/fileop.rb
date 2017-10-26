@@ -4,7 +4,7 @@ module Note
   # FileOp class provides common functionality for all of the objects that touch 
   # files
   class FileOp
-    attr_reader :name, :path, :book
+    attr_reader :name, :fullname, :path, :book
     
     ############################################################################
     # static functionality
@@ -42,10 +42,10 @@ module Note
     end
 
     # runs all of the creation steps for the page dir
-    def compose(local_path=nil, config: Config.new)
-			@local_path = local_path if local_path
-			@path = File.join(config.namespace_path, local_path)
-			parsed = @local_path.rpartition('/')
+    def compose(fullname=nil, config: Config.new)
+			@fullname = fullname if fullname
+			@path = File.join(config.namespace_path, fullname)
+			parsed = @fullname.rpartition('/')
       @name = parsed.last
 			@book = Book.create (parsed.length > 1 ? parsed.first : "")
     end
@@ -57,9 +57,12 @@ module Note
     # renames a file to a new name and checks if a file
     # exists first
     def rename(name)
-			newpath = @book.path_to(name)
+      config = Config.create
+      newname = config.namespace(name)
+			newpath = config.namespace_path(name)
+      newfile = self.class.create newname
       FileUtils.mv @path, newpath
-      self.compose newpath
+      self.compose newname
       return true
     end
 

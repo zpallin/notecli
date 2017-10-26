@@ -262,7 +262,7 @@ RSpec.describe Note do
 				config = Config.new
 				expect(config.namespace).to eq("")
 				config.set_namespace("b1")
-				expect(config.namespace).to eq("b1")
+				expect(config.namespace).to eq("b1/")
 			end
       FakeFS.clear!
 		end
@@ -295,9 +295,17 @@ RSpec.describe Note do
         f1 = FileOp.create "f1"
 				f2 = FileOp.new "f2" # not created
         expect(f1.rename "f2").to eq(true)
+        expect(f1.fullname).to eq("f2")
         expect(f1.name).to eq("f2")
         expect(FileOp.exists? "f1").to eq(false)
         expect(FileOp.exists? "f2").to eq(true)
+
+        # test that we can rename it to a booked 
+        expect(f1.rename "test/f1").to eq(true)
+        expect(f1.fullname).to eq("test/f1")
+        expect(f1.name).to eq("f1")
+        expect(FileOp.exists? "test/f1").to eq(true)
+        expect(FileOp.exists? "f2").to eq(false)
       end
       FakeFS.clear!
     end

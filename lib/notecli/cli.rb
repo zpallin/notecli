@@ -3,6 +3,8 @@ require 'thor'
 require 'notecli/config'
 require 'notecli/group'
 require 'notecli/page'
+require 'notecli/book'
+require 'notecli/version'
 require "highline/import"
 
 module Notecli
@@ -16,6 +18,8 @@ module Notecli
 #				
 #		end
 
+    ############################################################################ 
+    # show contents of a book
 		desc "show NAME", "show all pages of a book"
     option :'fullpath',
            :type => :boolean,
@@ -394,11 +398,45 @@ module Notecli
 				end
 			end
 		end
-        
+ 
+    desc "rename OLDPATH NEWPATH", "rename a page"
+    option :force,
+           :type => :boolean,
+           :default => false,
+           :aliases => [:'f']
+    def rename(oldname, newname)
+      if Page.exists? oldname
+        overwrite = nil
+
+        if not options[:force] and Page.exists? newname
+          puts "Page \"#{newname}\" exists already.\rOverwrite? (y/n)"
+          overwrite = gets.chomp.downcase
+        end
+
+        if overwrite == "y" or options[:force] or not Page.exists? newname
+          Page.new(oldname).rename newname
+          puts "\"#{oldname}\" renamed to \"#{newname}\""
+        end
+      else
+        puts "Page \"#{oldname}\" does not exist"
+      end
+    end
+    ############################################################################ 
+    # version
+    desc "version", "displays current version"
+    def version
+      puts Notecli::VERSION
+    end
+    map "v" => :version
+  
+    ############################################################################ 
+    # linking for groups
 		desc "link SUBCOMMAND [OPTIONS]", "used to link groups and pages"
 		subcommand :link, Link
 		map "l" => :link
 
+    ############################################################################ 
+    # book command for managing books
 		desc "book SUBCOMMAND [OPTIONS]", "book management commands"
 		subcommand :book, Book
 		map "b" => :book

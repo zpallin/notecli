@@ -74,8 +74,8 @@ module Note
 		end
 
 		# for ergonomics
-		def namespace
-			self.settings["namespace"]
+		def namespace(subpath="")
+			File.join(self.settings["namespace"],subpath).sub(/^\//,"")
 		end
 
 		# for ergonomically recalling the current fullpath of the namespace
