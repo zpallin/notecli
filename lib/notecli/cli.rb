@@ -286,7 +286,11 @@ module Notecli
     desc "search REGEX", "finds files with matching data"
     def search(match)
       say "Match for this string: /#{match}/"
-      res = Page::search(match)
+      path_parsed = match.rpartition('/')
+      submatch = path_parsed.last
+      book = Note::Book.create (path_parsed.length > 1 ? path_parsed.first : "")
+
+      res = book.search(submatch)
 
       res.each do |r|
         puts "#{r[:page].name}:#{r[:line]} -> #{r[:grep]}"
