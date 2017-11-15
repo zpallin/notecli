@@ -385,7 +385,7 @@ module Notecli
     end
 
 		desc "books MATCH", "lists all books in a namespace"
-		def books(match="*")
+		def books(match="")
 			matchParsed = match.rpartition('/')
 			bookName = matchParsed.length > 1 ? matchParsed.first : ""
 
@@ -393,7 +393,7 @@ module Notecli
 				puts "Book \"#{bookName}\" does not exist"
 			else
 				parentBook = Note::Book.new bookName
-				matchString = File.expand_path(File.join(parentBook.path, matchParsed.last))
+				matchString = File.expand_path(File.join(parentBook.path, matchParsed.last, "*"))
 				Dir[matchString].select{|f|
 					fn = f.rpartition('/').last
 					File.directory? f and !(fn =='.' || fn == '..')
