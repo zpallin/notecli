@@ -65,7 +65,7 @@ module Note
 		# lists all of the pages within the book that match the call
 		def list_files(match="*")
 			match_str = "#{self.path}/#{match}"
-			Dir[match_str]
+			Dir[match_str].select{|x| File.file? x}
 		end
 
 		# sets a book to the reader namespace so page names do not need to include
@@ -103,6 +103,7 @@ module Note
 	 	def search(match="*")
 			found = []
 			self.list_pages.each do |f|
+        puts f.path
 				# supposedly will be more memory efficient
 				# from The Tin man
 				# https://stackoverflow.com/questions/5761348/ruby-grep-with-line-number
@@ -112,7 +113,7 @@ module Note
 									.inject([]) { |m,i| m << i if (i[0][match]); m }
 
 					grep.each do |g|
-						found << {name: f.name, search: g.first, line: g.last}
+						found << {page: f, search: g.first, line: g.last}
 					end if grep.length > 0
 				end
 			end
