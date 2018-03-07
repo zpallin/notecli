@@ -272,12 +272,14 @@ module Notecli
            :default => false,
            :type => :boolean,
            :aliases => [:'-p']
-    def find(match="*")
-      say "Find files matching this name: /#{match}/"
+    def find(match="/*")
+      say "Find files matching this name: \"#{match}\""
+      book, pagename = Note::Book::book_and_pagename(match)
+      pagename = "*" if pagename == ""
       if options[:full_path]
-        puts Page::find_path(match).map{|page| page.path}
+        puts book.list_pages(pagename).map{|page| page.path}
       else
-        puts Page::find(match).map{|page| page.name}
+        puts book.list_pages(pagename).map{|page| page.name}
       end
     end
     map "f" => :find
@@ -286,7 +288,8 @@ module Notecli
     desc "search REGEX", "finds files with matching data"
     def search(match)
       say "Match for this string: /#{match}/"
-      res = Page::search(match)
+      book, pagename = Note::Book::book_and_pagename(match)
+      res = book.search(pagename)
 
       res.each do |r|
         puts "#{r[:page].name}:#{r[:line]} -> #{r[:grep]}"
@@ -318,9 +321,10 @@ module Notecli
            :type => :boolean,
            :aliases => [:'-f']
     def rm(match)
-      Page::find(match).each do |page|
+      book, pagename = Note::Book::book_and_pagename(match)
+      book.list_pages(pagename).each do |page|
         if !options[:force]
-          delete = ask "Delete #{page.name}? (y/n)"
+          delete = ask "Delete #{page.path}? (y/n)"
           next if delete.downcase != "y"
         end
         page.delete
@@ -382,19 +386,19 @@ module Notecli
 
 		desc "books MATCH", "lists all books in a namespace"
 		def books(match="*")
-			matchParsed = match.rpartition('/')
-			bookName = matchParsed.length > 1 ? matchParsed.first : ""
+			(book, pageName) = Note::Book::book_and_pagename(match)
 
-			if not Note::Book.exists? bookName
-				puts "Book \"#{bookName}\" does not exist"
+			if not book.exists?
+				puts "Book \"#{book.name}\" does not exist"
 			else
-				parentBook = Note::Book.new bookName
-				matchString = File.expand_path(File.join(parentBook.path, matchParsed.last))
+        # not sure what I was trying to do here anymore. Need to revisit
+				parentBook = Note::Book.new book.name
+				matchString = File.expand_path(File.join(parentBook.path, pageName))
 				Dir[matchString].select{|f|
 					fn = f.rpartition('/').last
 					File.directory? f and !(fn =='.' || fn == '..')
-				}.each do |book|
-					puts book.rpartition('/').last
+				}.each do |b|
+					puts b.rpartition('/').last
 				end
 			end
 		end
@@ -421,6 +425,7 @@ module Notecli
         puts "Page \"#{oldname}\" does not exist"
       end
     end
+
     ############################################################################ 
     # version
     desc "version", "displays current version"

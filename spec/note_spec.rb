@@ -26,6 +26,45 @@ RSpec.describe Note do
 			FakeFS.clear!
 		end
 
+    it "can check that it exists" do
+      FakeFS do
+        config = Config.new
+        expect(Book::exists? "b1").to be false
+        b1 = Book.create "b1"
+        expect(Book::exists? "b1").to be true
+        expect(b1.exists?).to be true
+      end
+			FakeFS.clear!
+    end
+
+    it "can parse books and pages and derive bookname from path" do
+      FakeFS do
+        config = Config.new
+        bookname = Book::name_from_path("b1/f1")
+        expect(bookname).to eq("b1")
+
+        bookname, pagename = Book::bookname_and_pagename("b1/f1")
+        expect(Book::exists? bookname).to be false
+        expect(Page::exists? pagename).to be false
+        expect(bookname).to eq("b1")
+        expect(pagename).to eq("f1")
+
+        b1 = Book.create "b1"
+        book, page = Book::book_and_page("b1/f1")
+        expect(book.exists?).to be true
+        expect(page.exists?).to be false
+        expect(book.name).to eq("b1")
+        expect(page.name).to eq("f1")
+
+        book, pagename = Book::book_and_pagename("b1/f1")
+        expect(book.exists?).to be true
+        expect(Page::exists? pagename).to be false
+        expect(book.name).to eq("b1")
+        expect(pagename).to eq("f1")
+      end
+			FakeFS.clear!
+    end
+
 		it "can list all files in its directory" do
 			FakeFS do
 				config = Config.create
@@ -69,23 +108,33 @@ RSpec.describe Note do
         f2 = Page.create "b1/f2"
         f1.write "stuff\nwhee\n"
         f2.write "stuff\n"
-  
+
         results = b1.search "stuff"
         expect(results.length).to eq(2)
-        expect(results[0][:name]).to eq("f1")
+        expect(results[0][:page].name).to eq("f1")
         expect(results[0][:search]).to eq("stuff\n")
         expect(results[0][:line]).to eq(1)
-        expect(results[1][:name]).to eq("f2")
+        expect(results[1][:page].name).to eq("f2")
         expect(results[1][:search]).to eq("stuff\n")
         expect(results[1][:line]).to eq(1)
 
         results = b1.search "whee"
         expect(results.length).to eq(1)
-        expect(results[0][:name]).to eq("f1")
+        expect(results[0][:page].name).to eq("f1")
         expect(results[0][:search]).to eq("whee\n")
         expect(results[0][:line]).to eq(2)
       end
       FakeFS.clear!
+    end
+
+    it "can assert the path to it exists" do
+      FakeFS do
+        b1 = Book.new "b1"
+        expect(File.directory? b1.path).to be false
+        b1.assert
+        expect(File.directory? b1.path).to be true
+      end
+			FakeFS.clear!
     end
 
 		it "can be deleted" do
@@ -109,6 +158,18 @@ RSpec.describe Note do
 			end
 			FakeFS.clear!
 		end
+
+    it "can generate paths to its components via courtesy methods" do
+      FakeFS do
+        config = Config.new
+        b1 = Book.create "b1"
+        expect(b1.path_to).to eq(config.store_path "b1")
+        expect(b1.path_match).to eq(config.store_path "b1/*")
+        expect(b1.path_to "test").to eq(config.store_path "b1/test")
+        expect(b1.path_match "*test*").to eq(config.store_path "b1/*test*")
+      end
+      FakeFS.clear!
+    end
 	end
 
   describe Group do
@@ -430,7 +491,7 @@ RSpec.describe Note do
         history = History.new
         f1 = Page.create "f1"
         expect(f1).to receive(:system)
-        expect_any_instance_of(History).to receive(:add).with(f1.name)
+        expect_any_instance_of(History).to receive(:add).with(f1.fullname)
         f1.open
       end
       FakeFS.clear!

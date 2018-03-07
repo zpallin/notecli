@@ -22,12 +22,35 @@ module Note
 				b.assert
 				b
 			end
+    
+      def book_and_page(path, config: Config.new)
+        bookname, pagename = Book::bookname_and_pagename(path)
+        [ Book::new(bookname), Page::new(pagename) ]
+      end
+
+      def book_and_pagename(path, config: Config.new)
+        bookname, pagename = Book::bookname_and_pagename(path)
+        [ Book::new(bookname), pagename ]
+      end
+
+      def bookname_and_pagename(path, config: Config.new)
+        bnpn = path.rpartition('/')
+        [ bnpn.first, bnpn.last ]
+      end
+
+      def name_from_path(path, config: Config.new)
+        Book::bookname_and_pagename(path).first
+      end
 		end
 
 		def initialize(name)
 			Config.create
 			self.create(name)
 		end
+
+    def exists?
+      self.class.exists? self.name
+    end
 
 		def list_names(match="*")
 			list_files(match).map{|f|f.rpartition('/').last}
@@ -42,7 +65,7 @@ module Note
 		# lists all of the pages within the book that match the call
 		def list_files(match="*")
 			match_str = "#{self.path}/#{match}"
-			Dir[match_str]
+			Dir[match_str].select{|x| File.file? x}
 		end
 
 		# sets a book to the reader namespace so page names do not need to include
@@ -67,16 +90,17 @@ module Note
 			FileUtils.rm_r @path
 		end
 
+    # expanded path assuming all matches
 		def path_match(match="*") 
-			File.expand_path(File.join(self.path, match))
+			File.expand_path(File.join(@path, match))
 		end
 
-		# returns full path of expected path based on book path
-		# ergonomically
+    # path_match except default is an empty name
 		def path_to(name="")
-			File.expand_path(File.join(@path, name))
+			self.path_match(name)
 		end
 
+    # does a text search on all child files
 	 	def search(match="*")
 			found = []
 			self.list_pages.each do |f|
@@ -89,7 +113,7 @@ module Note
 									.inject([]) { |m,i| m << i if (i[0][match]); m }
 
 					grep.each do |g|
-						found << {name: f.name, search: g.first, line: g.last}
+						found << {page: f, search: g.first, line: g.last}
 					end if grep.length > 0
 				end
 			end
