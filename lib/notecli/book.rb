@@ -22,12 +22,35 @@ module Note
 				b.assert
 				b
 			end
+    
+      def book_and_page(path, config: Config.new)
+        bookname, pagename = Book::bookname_and_pagename(path)
+        [ Book::new(bookname), Page::new(pagename) ]
+      end
+
+      def book_and_pagename(path, config: Config.new)
+        bookname, pagename = Book::bookname_and_pagename(path)
+        [ Book::new(bookname), pagename ]
+      end
+
+      def bookname_and_pagename(path, config: Config.new)
+        bnpn = path.rpartition('/')
+        [ bnpn.first, bnpn.last ]
+      end
+
+      def name_from_path(path, config: Config.new)
+        Book::bookname_and_pagename(path).first
+      end
 		end
 
 		def initialize(name)
 			Config.create
 			self.create(name)
 		end
+
+    def exists?
+      self.class.exists? self.name
+    end
 
 		def list_names(match="*")
 			list_files(match).map{|f|f.rpartition('/').last}
