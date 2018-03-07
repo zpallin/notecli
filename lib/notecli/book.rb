@@ -90,16 +90,17 @@ module Note
 			FileUtils.rm_r @path
 		end
 
+    # expanded path assuming all matches
 		def path_match(match="*") 
-			File.expand_path(File.join(self.path, match))
+			File.expand_path(File.join(@path, match))
 		end
 
-		# returns full path of expected path based on book path
-		# ergonomically
+    # path_match except default is an empty name
 		def path_to(name="")
-			File.expand_path(File.join(@path, name))
+			self.path_match(name)
 		end
 
+    # does a text search on all child files
 	 	def search(match="*")
 			found = []
 			self.list_pages.each do |f|
