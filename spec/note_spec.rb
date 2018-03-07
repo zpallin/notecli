@@ -26,6 +26,34 @@ RSpec.describe Note do
 			FakeFS.clear!
 		end
 
+    it "can check that it exists" do
+      FakeFS do
+        config = Config.new
+        expect(Book::exists? "b1").to be false
+        b1 = Book.create "b1"
+        expect(Book::exists? "b1").to be true
+        expect(b1.exists?).to be true
+      end
+    end
+
+    it "can parse books and pages" do
+      FakeFS do
+        config = Config.new
+        bookname, pagename = Book::bookname_and_pagename("b1/f1")
+        expect(Book::exists? bookname).to be false
+        expect(Page::exists? pagename).to be false
+
+        b1 = Book.create "b1"
+        book, page = Book::book_and_page("b1/f1")
+        expect(book.exists?).to be true
+        expect(page.exists?).to be false
+
+        book, pagename = Book::book_and_pagename("b1/f1")
+        expect(book.exists?).to be true
+        expect(page.exists?).to be false
+      end
+    end
+
 		it "can list all files in its directory" do
 			FakeFS do
 				config = Config.create
@@ -69,19 +97,19 @@ RSpec.describe Note do
         f2 = Page.create "b1/f2"
         f1.write "stuff\nwhee\n"
         f2.write "stuff\n"
-  
+
         results = b1.search "stuff"
         expect(results.length).to eq(2)
-        expect(results[0][:name]).to eq("f1")
+        expect(results[0][:page].name).to eq("f1")
         expect(results[0][:search]).to eq("stuff\n")
         expect(results[0][:line]).to eq(1)
-        expect(results[1][:name]).to eq("f2")
+        expect(results[1][:page].name).to eq("f2")
         expect(results[1][:search]).to eq("stuff\n")
         expect(results[1][:line]).to eq(1)
 
         results = b1.search "whee"
         expect(results.length).to eq(1)
-        expect(results[0][:name]).to eq("f1")
+        expect(results[0][:page].name).to eq("f1")
         expect(results[0][:search]).to eq("whee\n")
         expect(results[0][:line]).to eq(2)
       end
@@ -430,7 +458,7 @@ RSpec.describe Note do
         history = History.new
         f1 = Page.create "f1"
         expect(f1).to receive(:system)
-        expect_any_instance_of(History).to receive(:add).with(f1.name)
+        expect_any_instance_of(History).to receive(:add).with(f1.fullname)
         f1.open
       end
       FakeFS.clear!

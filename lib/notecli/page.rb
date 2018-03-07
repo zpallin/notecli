@@ -25,7 +25,7 @@ module Note
       system(editor.to_s, temp.to_s)
 
       history = History.new
-      history.add self.path
+      history.add self.fullname
 
       self.rm_temp ext
       self.cleanup!

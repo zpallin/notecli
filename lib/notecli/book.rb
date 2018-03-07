@@ -103,7 +103,6 @@ module Note
 	 	def search(match="*")
 			found = []
 			self.list_pages.each do |f|
-        puts f.path
 				# supposedly will be more memory efficient
 				# from The Tin man
 				# https://stackoverflow.com/questions/5761348/ruby-grep-with-line-number

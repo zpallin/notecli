@@ -34,6 +34,11 @@ module Note
       self.compose path
     end
 
+    # just check if it exists
+    def exists?
+      self.class.exists? self.path
+    end
+
     # creates a symlink to another path for the original path of
     # this page
     def symlink(to_path)
