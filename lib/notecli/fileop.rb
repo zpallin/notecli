@@ -1,42 +1,40 @@
-
 ################################################################################
 module Note
-  # FileOp class provides common functionality for all of the objects that touch 
+  # FileOp class provides common functionality for all of the objects that touch
   # files
   class FileOp
     attr_reader :name, :fullname, :path, :book
-    
+
     ############################################################################
     # static functionality
     class << self
-
       # check if a file exists for this class
       def exists?(path)
-				f = FileOp.new(path)
-        File.exists? f.path
+        f = FileOp.new(path)
+        File.exist? f.path
       end
-      alias_method :exist?, :exists?
+      alias exist? exists?
 
-			# used so that "new" doesn't automatically touch a file
-			def create(path)
-				f = self.new path
-				f.touch
-				f
-			end
+      # used so that "new" doesn't automatically touch a file
+      def create(path)
+        f = new path
+        f.touch
+        f
+      end
     end
 
-    ############################################################################ 
+    ############################################################################
     # methods
 
-    # by default, it saves the config 
+    # by default, it saves the config
     def initialize(path)
-			Config.create
-      self.compose path
+      Config.create
+      compose path
     end
 
     # just check if it exists
     def exists?
-      self.class.exists? self.path
+      self.class.exists? path
     end
 
     # creates a symlink to another path for the original path of
@@ -47,12 +45,12 @@ module Note
     end
 
     # runs all of the creation steps for the page dir
-    def compose(fullname=nil, config: Config.new)
-			@fullname = fullname if fullname
-			@path = File.join(config.namespace_path, fullname)
-			parsed = @fullname.rpartition('/')
+    def compose(fullname = nil, config: Config.new)
+      @fullname = fullname if fullname
+      @path = File.join(config.namespace_path, fullname)
+      parsed = @fullname.rpartition('/')
       @name = parsed.last
-			@book = Book.create (parsed.length > 1 ? parsed.first : "")
+      @book = Book.create (parsed.length > 1 ? parsed.first : '')
     end
 
     def touch
@@ -64,11 +62,11 @@ module Note
     def rename(name)
       config = Config.create
       newname = config.namespace(name)
-			newpath = config.namespace_path(name)
+      newpath = config.namespace_path(name)
       newfile = self.class.create newname
       FileUtils.mv @path, newpath
-      self.compose newname
-      return true
+      compose newname
+      true
     end
 
     # delete the page
@@ -78,26 +76,26 @@ module Note
 
     # write file
     def write(data)
-      data = data.join("\n") if data.kind_of?(Array)
-      file = File.open(self.path, "w")
+      data = data.join("\n") if data.is_a?(Array)
+      file = File.open(path, 'w')
       file.write(data)
     end
 
     # appends the file content with a string
     def append(string)
-      File.open(@path, "a") do |file|
+      File.open(@path, 'a') do |file|
         file.write string
       end
     end
 
     # prepends the top of a note with a new line
     def prepend(string)
-      File.open(@path, "r") do |orig|
-          File.unlink(@path)
-          File.open(@path, "w") do |new|
-              new.write string
-              new.write orig.read()
-          end
+      File.open(@path, 'r') do |orig|
+        File.unlink(@path)
+        File.open(@path, 'w') do |new|
+          new.write string
+          new.write orig.read
+        end
       end
     end
 
