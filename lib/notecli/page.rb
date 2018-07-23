@@ -130,9 +130,9 @@ module Note
       instance_variable_set :"@#{__callee__}", func
     end
 
-    alias :one, :action
-    alias :many, :action
-    alias :none, :action
+    alias one action
+    alias many action
+    alias none action
 
     yield if block_given?
 
