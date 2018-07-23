@@ -1,51 +1,45 @@
-
-require "fileutils"
-require "deep_merge"
-require "yaml"
-require "notecli/history"
+require 'fileutils'
+require 'deep_merge'
+require 'yaml'
+require 'notecli/history'
 
 module Note
-  ############################################################################## 
+  ##############################################################################
   # a page is a file, no less. This class contains to means to crud a file
   # more or less. Called a page to avoid name confict
   #
   # this class operates to interaction with the file structure, does not store
   # any state data.
   class Page < FileOp
-
     # opens a file with the editor and file type provided
-    # a file is symlinked to a tmp directory and opened with 
+    # a file is symlinked to a tmp directory and opened with
     # a different file extension
     def open(editor: nil, ext: nil, config: Config.create)
-
-      editor ||= config.settings["editor"]
-      ext ||= config.settings["ext"]
+      editor ||= config.settings['editor']
+      ext ||= config.settings['ext']
       temp = self.temp ext
-      
+
       system(editor.to_s, temp.to_s)
 
       history = History.new
-      history.add self.fullname
+      history.add fullname
 
-      self.rm_temp ext
-      self.cleanup!
+      rm_temp ext
+      cleanup!
     end
 
     def cleanup!
-      data = self.read.split.join(" ")
-      if data == ""
-        self.delete
-      end
+      data = read.split.join(' ')
+      delete if data == ''
     end
 
     def self.open_multiple(pages, editor: nil, ext: nil, config: Config.new)
-      
-      editor ||= config.settings["editor"]
-      ext ||= config.settings["ext"]
+      editor ||= config.settings['editor']
+      ext ||= config.settings['ext']
       history = History.new
 
-      temps = pages.map{|page| page.temp ext}
-      if temps.length > 0
+      temps = pages.map { |page| page.temp ext }
+      unless temps.empty?
         conns = "#{editor} #{temps.join(' ')}"
         system(conns)
         pages.each do |page|
@@ -53,7 +47,7 @@ module Note
           page.rm_temp ext
           page.cleanup!
         end
-      end  
+      end
       temps
     end
 
@@ -66,49 +60,43 @@ module Note
     #
     def self.process_pages(args, match: false)
       if match
-        return args.map{|f|
-					page = Page.new f
+        args.map do |f|
+          page = Page.new f
           page.book.list_pages(f)
-        }.flatten.map{|f|
-          f.name
-        }.uniq.map{|f|
+        end.flatten.map(&:name).uniq.map do |f|
           Page.create f
-        }
+        end
       else
-        return args.map{|f| Page.create(f)}.flatten
+        args.map { |f| Page.create(f) }.flatten
       end
     end
 
-    ############################################################################ 
+    ############################################################################
     # creates a symlink in a temp directory
-    def temp(ext=nil, temp_path=nil, config: Config.new)
+    def temp(ext = nil, temp_path = nil, config: Config.new)
+      temp_path ||= config.settings['temp_path']
+      ext ||= config.settings['ext']
 
-      temp_path ||= config.settings["temp_path"]
-      ext ||= config.settings["ext"]
-     
       to_path = File.join(
-        temp_path, 
-        [@name, ext].join(".")
+        temp_path,
+        [@name, ext].join('.')
       )
       FileUtils.mkdir_p temp_path
-      self.symlink to_path
+      symlink to_path
       to_path
     end
 
     # removes a temp file after it is created
-    def rm_temp(file_ext, temp_path: Config.new.settings["temp_path"])
-      path = File.join(temp_path, [@name, file_ext].join("."))
-      if File.file? path
-        FileUtils.rm path
-      end
+    def rm_temp(file_ext, temp_path: Config.new.settings['temp_path'])
+      path = File.join(temp_path, [@name, file_ext].join('.'))
+      FileUtils.rm path if File.file? path
     end
   end
-
 
   # page_op
   # standardized logic or opening files under unique conditions to abstract
   # new logic for CLI. Helps CLI maintain simplicity:
-  # 
+  #
   #   ```
   #   - `one` for single pages
   #   - `many` for multiple pages
@@ -125,16 +113,16 @@ module Note
     @verbose = false
     @pages = []
     @one, @many, @none = [nil] * 3
-    
-    def match(m=true)
+
+    def match(m = true)
       @match = m
     end
 
-    def verbose(v=false)
+    def verbose(v = false)
       @verbose = v
     end
 
-    def pages(pgs=[])
+    def pages(pgs = [])
       @pages = pgs
     end
 
@@ -148,15 +136,15 @@ module Note
 
     yield if block_given?
 
-    @pages = Page::process_pages @pages, match: @match
-    @pnames = @pages.map{|p| p.name}
+    @pages = Page.process_pages @pages, match: @match
+    @pnames = @pages.map(&:name)
 
-    if @one and @pages.length == 1
+    if @one && (@pages.length == 1)
 
       puts "#{@name}: \"#{@pnames.first}\"" if @verbose
       @one.call @pages if @one.respond_to? :call
 
-    elsif @many and @pages.length > 1 and @many
+    elsif @many && (@pages.length > 1) && @many
 
       puts "#{@name} in order: (#{@pnames})" if @verbose
       @many.call @pages if @many.respond_to? :call

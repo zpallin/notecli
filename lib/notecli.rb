@@ -1,4 +1,3 @@
-
 require 'notecli/version'
 require 'notecli/fileop'
 require 'notecli/history'
